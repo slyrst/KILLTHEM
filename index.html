@@ -219,34 +219,26 @@ function tryParry(){
   if(!player.alive || parryCooldown > 0) return;
   parryCooldown = 0.28;
 
-  // Shotgun parry: normal atışta pelletler saçılır,
-  // parrylenince tüm pelletler mouse yönüne TAM DÜZ çevrilir.
+  // Shotgun mermisini parryleyince mermi kaybolmaz: bulunduğu yerde patlar ve düz devam eden 2x hasarlı patlayıcı mermi olur.
   let shotgunParried = false;
-  const parryAim = Math.atan2(
-    mouseWorld().y - player.y,
-    mouseWorld().x - player.x
-  );
-
   for(const b of bullets){
     if(b.type !== 'shotgun' || b.parriedExplosive) continue;
     if(dist(b.x,b.y,player.x,player.y) <= 105){
-      const speed = 980;
-
-      // Parry: tüm pelletleri aynı noktaya topla ve tek bir düz hatta gönder.
-      b.x = player.x;
-      b.y = player.y;
-      b.vx = Math.cos(parryAim) * speed;
-      b.vy = Math.sin(parryAim) * speed;
-
-      b.parriedExplosive = true;
-      b.explosive = true;
-      b.dmgMultiplier = 2;
-      b.explosionRadius = 125;
-      b.explosionDamage = 120;
-      b.life = 1.35;
-
       spawnExplosion(b.x,b.y,1.15);
-      shotgunParried = true;
+      b.parriedExplosive=true;
+      b.explosive=true;
+      b.dmgMultiplier=2;
+      b.explosionRadius=125;
+      b.explosionDamage=120;
+
+      // Parrylenen shotgun pellet artık spread açısını korumaz:
+      // mouse'un tam yönüne, dümdüz gider.
+      const mw = mouseWorld();
+      const parryAim = Math.atan2(mw.y - player.y, mw.x - player.x);
+      const parrySpeed = 1050;
+      b.vx = Math.cos(parryAim) * parrySpeed;
+      b.vy = Math.sin(parryAim) * parrySpeed;
+      shotgunParried=true;
     }
   }
 
@@ -361,31 +353,24 @@ function shoot(){
   const muzzleDist = player.radius + 18;
   if(weapon === 'shotgun'){
     player.fireCooldown = player.shotgunRate;
-
-    // SHOTGUN: 5 pellet.
-    // Normal atışta pelletler sadece NAMLUDA yan yana görünür;
-    // hepsi aynı aim açısında gider. Artık spread yok.
-    // Parrylendiğinde de aynı şekilde tek bir düz hatta giderler.
-    const pelletCount = 5;
-
-    for(let k=0;k<pelletCount;k++){
-      const side = (k - (pelletCount-1)/2) * 7;
-      const px = -Math.sin(ang);
-      const py = Math.cos(ang);
-
+    // 3 pellets: gerçek shotgun gibi her pellet farklı bir yöne açılır.
+    // Hepsi aynı namlu noktasından çıkar; sadece uçuş açıları farklıdır.
+    // Böylece mermiler yan yana paralel gitmez, ilerledikçe yayılır.
+    const spreadAngles = [-0.18, 0, 0.18]; // yaklaşık ±10.3°
+    for(const spread of spreadAngles){
+      const pelletAng = ang + spread;
       bullets.push({
-        x:player.x+Math.cos(ang)*muzzleDist + px*side,
-        y:player.y+Math.sin(ang)*muzzleDist + py*side,
-        vx:Math.cos(ang)*690,
-        vy:Math.sin(ang)*690,
+        x:player.x+Math.cos(pelletAng)*muzzleDist,
+        y:player.y+Math.sin(pelletAng)*muzzleDist,
+        vx:Math.cos(pelletAng)*690,
+        vy:Math.sin(pelletAng)*690,
         dmg:22,
         type:'shotgun',
         life:1.1,
         spawnX:player.x,
         spawnY:player.y,
-        parriedExplosive:false,
-        explosive:false,
-        dmgMultiplier:1
+        parriedExplosive:false, explosive:false, dmgMultiplier:1,
+        spreadAngle:spread
       });
     }
   } else {
