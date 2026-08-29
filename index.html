@@ -224,6 +224,7 @@ let bossEnemyRef = null;     // reference to the enemy object that is/was the bo
 let bossActive = false;      // true while the boss health bar should be shown
 let screenShake = { timer: 0, duration: 1, strength: 0 };
 let bossPulse = { active: false, timer: 0, duration: 1, x: 0, y: 0 };
+let healPulseTimer = 0; // green ring around the player on a point-blank heal-kill
 
 window.addEventListener('keydown', e => {
   if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
@@ -539,6 +540,14 @@ function registerKill(e, exploded){
     bossEnemyRef = null;
   }
 
+  // Point-blank kill: if the enemy died almost inside the player (barely
+  // touching / overlapping), it's a close-range execution - give some HP
+  // back, with a green heal pulse around the player.
+  const closeRange = player.radius + e.radius + 8;
+  if(dist(player.x, player.y, e.x, e.y) <= closeRange){
+    healPlayer(15);
+  }
+
   spawnCorpsePieces(e, exploded);
   player.killStreak++;
   player.totalKills++;
@@ -562,6 +571,7 @@ function update(dt){
     bossPulse.timer -= dt;
     if(bossPulse.timer <= 0) bossPulse.active = false;
   }
+  if(healPulseTimer > 0) healPulseTimer -= dt;
 
   for(let i=deathPieces.length-1;i>=0;i--){
     const p = deathPieces[i];
@@ -962,6 +972,14 @@ function damagePlayer(amount){
   }
 }
 
+// Heals the player (used for point-blank "execution" kills) and kicks off
+// a green pulse ring around them so the heal is readable at a glance.
+function healPlayer(amount){
+  if(!player.alive) return;
+  player.hp = Math.min(player.maxHp, player.hp + amount);
+  healPulseTimer = 0.4;
+}
+
 function showBanner(){
   const msgs = ['STREAK!','NICE!','KEEP GOING!','ON FIRE!','UNSTOPPABLE!'];
   if(player.killStreak >= 7) banner.text = 'BRUTAL!';
@@ -1155,6 +1173,28 @@ function render(){
     ctx.restore();
   }
 
+  // --- heal pulse (green ring on the player from a point-blank kill) ---
+  if(healPulseTimer > 0){
+    const p = 1 - healPulseTimer / 0.4;
+    const psx = player.x - camera.x, psy = player.y - camera.y;
+    const r = 14 + p * 70;
+    ctx.save();
+    ctx.globalAlpha = (1-p) * 0.9;
+    ctx.strokeStyle = '#39ff6e';
+    ctx.lineWidth = 6 - p*3;
+    ctx.shadowColor = '#26ff5e';
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.arc(psx, psy, r, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.globalAlpha = (1-p) * 0.25;
+    ctx.fillStyle = '#8dffaa';
+    ctx.beginPath();
+    ctx.arc(psx, psy, r*0.55, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   ctx.restore(); // end screen-shake transform
 
   updateUI();
@@ -1303,6 +1343,7 @@ function restartGame(){
   bossTriggered = false; bossEnemyRef = null; bossActive = false;
   screenShake = { timer:0, duration:1, strength:0 };
   bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
+  healPulseTimer = 0;
   document.getElementById('deathScreen').style.display = 'none';
   lastTime = performance.now();
 }
