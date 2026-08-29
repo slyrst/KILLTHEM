@@ -232,7 +232,9 @@ function tryParry(){
     if(dist(b.x,b.y,player.x,player.y) <= 105){
       const speed = 980;
 
-      // Mevcut spread yönünü sıfırla: hepsi aynı yöne gider.
+      // Parry: tüm pelletleri aynı noktaya topla ve tek bir düz hatta gönder.
+      b.x = player.x;
+      b.y = player.y;
       b.vx = Math.cos(parryAim) * speed;
       b.vy = Math.sin(parryAim) * speed;
 
@@ -360,23 +362,22 @@ function shoot(){
   if(weapon === 'shotgun'){
     player.fireCooldown = player.shotgunRate;
 
-    // NORMAL SHOTGUN: 5 pellet, gerçek spread.
-    // Pelletler namludan yan yana çıkar ve açıları giderek açılır.
-    const pelletAngles = [-0.16, -0.08, 0, 0.08, 0.16];
+    // SHOTGUN: 5 pellet.
+    // Normal atışta pelletler sadece NAMLUDA yan yana görünür;
+    // hepsi aynı aim açısında gider. Artık spread yok.
+    // Parrylendiğinde de aynı şekilde tek bir düz hatta giderler.
+    const pelletCount = 5;
 
-    for(let k=0;k<pelletAngles.length;k++){
-      const a = ang + pelletAngles[k];
-
-      // Çıkışta pelletlerin yan yana görünmesi için küçük yatay offset.
-      const side = (k - 2) * 7;
+    for(let k=0;k<pelletCount;k++){
+      const side = (k - (pelletCount-1)/2) * 7;
       const px = -Math.sin(ang);
       const py = Math.cos(ang);
 
       bullets.push({
         x:player.x+Math.cos(ang)*muzzleDist + px*side,
         y:player.y+Math.sin(ang)*muzzleDist + py*side,
-        vx:Math.cos(a)*690,
-        vy:Math.sin(a)*690,
+        vx:Math.cos(ang)*690,
+        vy:Math.sin(ang)*690,
         dmg:22,
         type:'shotgun',
         life:1.1,
