@@ -43,6 +43,26 @@
     font-size:15px;font-weight:bold;color:#22ffee;background:rgba(0,0,0,.55);
     padding:6px 14px;border-radius:6px;opacity:0;transition:opacity .15s;
   }
+  #bossBarWrap{
+    position:absolute;top:18px;left:50%;transform:translateX(-50%);
+    width:56%;max-width:760px;min-width:320px;
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  #bossBarWrap.show{ opacity:1; }
+  #bossName{
+    text-align:center;font-size:30px;font-weight:900;letter-spacing:5px;
+    color:#ff2b2b;text-shadow:0 0 10px #ff0000,0 0 24px #ff2200,2px 2px 0 #000;
+    margin-bottom:6px;
+  }
+  #bossBarBg{
+    width:100%;height:30px;background:#200404;border:3px solid #000;
+    border-radius:6px;overflow:hidden;box-shadow:0 0 22px rgba(255,0,0,.55),inset 0 0 10px #000;
+  }
+  #bossBar{
+    height:100%;width:100%;
+    background:linear-gradient(90deg,#8a0000,#ff1414 55%,#ff5a3d);
+    transition:width .15s;
+  }
 </style>
 </head>
 <body>
@@ -56,6 +76,10 @@
     <div id="dashBarBg"><div id="dashBar"></div></div>
   </div>
   <div id="streakText">Streak: 0 &nbsp;•&nbsp; Kills: 0</div>
+  <div id="bossBarWrap">
+    <div id="bossName">MUTATED GREEN</div>
+    <div id="bossBarBg"><div id="bossBar"></div></div>
+  </div>
   <div id="banner"></div>
   <div id="calibText"></div><div id="parryPulse"></div>
   <div id="help">
@@ -194,6 +218,13 @@ let explosions = [];
 let deathPieces = [];
 let corpsePieces = [];
 
+// ---------- BOSS (MUTATED GREEN) ----------
+let bossTriggered = false;   // true once the 50th-kill mutation has fired
+let bossEnemyRef = null;     // reference to the enemy object that is/was the boss
+let bossActive = false;      // true while the boss health bar should be shown
+let screenShake = { timer: 0, duration: 1, strength: 0 };
+let bossPulse = { active: false, timer: 0, duration: 1, x: 0, y: 0 };
+
 window.addEventListener('keydown', e => {
   if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
   if(e.key === '1') weapon='gun';
@@ -217,7 +248,6 @@ window.addEventListener('mouseup', () => mouseDown = false);
 
 function tryParry(){
   if(!player.alive || parryCooldown > 0) return;
-  parryCooldown = 0.28;
 
   // Shotgun mermisini parryleyince mermi kaybolmaz: bulunduğu yerde patlar ve düz devam eden 2x hasarlı patlayıcı mermi olur.
   let shotgunParried = false;
@@ -307,6 +337,15 @@ function tryParry(){
       parryPulse.y = lastParriedOrbPos.y;
       parryPulse.active = true;
     }
+  }
+
+  // Whiff (nothing in range) = no lockout at all, so spamming F while
+  // waiting for the next orb never costs you a beat. A real parry only
+  // gets a tiny cooldown, just long enough to stop one press registering
+  // twice in the same frame - short enough that fast, back-to-back orbs
+  // (like the boss's 5-orb burst) can each still be parried in turn.
+  if(parried || shotgunParried){
+    parryCooldown = 0.08;
   }
 }
 
@@ -415,6 +454,98 @@ function spawnEnemy(){
   }
 }
 
+// Turns a normal green enemy into the MUTATED GREEN boss: massive HP (30x
+// a normal green), a slow grow-in-place "awakening" animation with screen
+// shake + a pulse ring, and afterwards it fires 5-orb bursts on top of its
+// usual melee lunge.
+function mutateToBoss(e){
+  const GREEN_BASE_HP = 60;
+  e.isBoss = true;
+  e.bossName = 'MUTATED GREEN';
+  e.maxHp = GREEN_BASE_HP * 30;
+  e.hp = e.maxHp;
+  e.baseRadius = e.radius;
+  e.targetRadius = e.baseRadius * 3.4;
+  e.mutating = true;
+  e.growTimer = 2.6;
+  e.growDuration = 2.6;
+  e.speed *= 0.8;              // bigger body, a touch slower
+  e.dmg = Math.round(e.dmg * 1.8);
+  e.orbBurstTimer = 1.8;       // first burst shortly after it wakes up
+  e.orbBurstRate = 2.6;
+
+  bossEnemyRef = e;
+  bossActive = true;
+
+  screenShake.timer = e.growDuration;
+  screenShake.duration = e.growDuration;
+  screenShake.strength = 16;
+
+  bossPulse.active = true;
+  bossPulse.timer = e.growDuration;
+  bossPulse.duration = e.growDuration;
+  bossPulse.x = e.x;
+  bossPulse.y = e.y;
+
+  banner.text = 'MUTATION!';
+  banner.timer = 1.4;
+}
+
+// Fires 5 yellow orbs at once in a spread aimed at the player.
+function bossOrbBurst(e){
+  const baseAng = Math.atan2(player.y - e.y, player.x - e.x);
+  const count = 5;
+  const totalSpread = 0.85;
+  for(let i=0;i<count;i++){
+    const t = (i/(count-1)) - 0.5; // -0.5 .. 0.5
+    const ang = baseAng + t*totalSpread;
+    orbs.push({
+      x: e.x, y: e.y,
+      vx: Math.cos(ang)*820, vy: Math.sin(ang)*820,
+      dmg: 16,
+    });
+  }
+  screenShake.timer = Math.max(screenShake.timer, 0.22);
+  screenShake.duration = Math.max(screenShake.duration, 0.22);
+  screenShake.strength = Math.max(screenShake.strength, 6);
+}
+
+// Central kill handler. Every place an enemy's hp drops to 0 should call
+// this instead of directly splicing it out of `enemies`, so the 50th-kill
+// boss mutation can intercept a death and turn the enemy into the boss
+// instead of letting it die normally. Returns true if the enemy actually
+// died (caller should remove it from `enemies`), false if it mutated
+// instead (caller should NOT remove it - it's still alive).
+function registerKill(e, exploded){
+  const willBeKillNum = player.totalKills + 1;
+
+  if(willBeKillNum === 50 && !bossTriggered){
+    bossTriggered = true;
+    let target = e;
+    if(target.type !== 'green'){
+      const greens = enemies.filter(x => x.type === 'green' && x !== e && !x.isBoss);
+      if(greens.length) target = greens[Math.floor(Math.random()*greens.length)];
+    }
+    mutateToBoss(target);
+    if(target === e){
+      // This kill is cancelled - the enemy mutates instead of dying.
+      return false;
+    }
+    // A different enemy mutated; this one still dies normally.
+  }
+
+  if(e === bossEnemyRef){
+    bossActive = false;
+    bossEnemyRef = null;
+  }
+
+  spawnCorpsePieces(e, exploded);
+  player.killStreak++;
+  player.totalKills++;
+  showBanner();
+  return true;
+}
+
 // ---------- UPDATE ----------
 let lastTime = performance.now();
 let banner = { text:'', timer:0 };
@@ -424,6 +555,12 @@ function update(dt){
   for(let i=explosions.length-1;i>=0;i--){
     explosions[i].timer -= dt;
     if(explosions[i].timer <= 0) explosions.splice(i,1);
+  }
+
+  if(screenShake.timer > 0) screenShake.timer -= dt;
+  if(bossPulse.timer > 0){
+    bossPulse.timer -= dt;
+    if(bossPulse.timer <= 0) bossPulse.active = false;
   }
 
   for(let i=deathPieces.length-1;i>=0;i--){
@@ -549,11 +686,9 @@ function update(dt){
         bullets.splice(i,1);
         if(e.hp <= 0){
           // Normal silah ölümü: Green ve Glob aynı 3x3 ceset parçalarına ayrılır.
-          spawnCorpsePieces(e, false);
-          enemies.splice(j,1);
-          player.killStreak++;
-          player.totalKills++;
-          showBanner();
+          if(registerKill(e, false)){
+            enemies.splice(j,1);
+          }
         }
         break;
       }
@@ -603,11 +738,9 @@ function update(dt){
 
           if(e.hp<=0){
             // Explosion/parry ölümü: aynı ceset parçaları ama çok daha güçlü fırlatılır.
-            spawnCorpsePieces(e, true);
-            enemies.splice(j,1);
-            player.killStreak++;
-            player.totalKills++;
-            showBanner();
+            if(registerKill(e, true)){
+              enemies.splice(j,1);
+            }
           }
           break;
         }
@@ -634,6 +767,30 @@ function update(dt){
 }
 
 function updateGreen(e, dt){
+  // ----- boss awakening: grow in place, don't act until fully grown -----
+  if(e.mutating){
+    e.growTimer -= dt;
+    const t = clamp(1 - Math.max(0,e.growTimer)/e.growDuration, 0, 1);
+    // eased growth with a fading wobble/pulse on top, like it's shuddering awake
+    const eased = 1 - Math.pow(1-t, 2);
+    const wobble = Math.sin(t*Math.PI*7) * (1-t) * 0.12;
+    e.radius = e.baseRadius + (e.targetRadius - e.baseRadius) * eased + e.baseRadius*wobble;
+    if(e.growTimer <= 0){
+      e.mutating = false;
+      e.radius = e.targetRadius;
+    }
+    return; // stays put while it mutates
+  }
+
+  if(e.isBoss){
+    if(e.orbBurstTimer === undefined) e.orbBurstTimer = e.orbBurstRate || 2.6;
+    e.orbBurstTimer -= dt;
+    if(e.orbBurstTimer <= 0){
+      bossOrbBurst(e);
+      e.orbBurstTimer = e.orbBurstRate || 2.6;
+    }
+  }
+
   const d = dist(e.x,e.y,player.x,player.y);
   if(e.hitCooldown>0) e.hitCooldown -= dt;
 
@@ -748,11 +905,9 @@ function damageEnemiesInExplosion(x,y,radius,damage){
     e.hp -= damage*scale;
     e.hitFlash=0.28;
     if(e.hp<=0){
-      spawnCorpsePieces(e,true);
-      enemies.splice(j,1);
-      player.killStreak++;
-      player.totalKills++;
-      showBanner();
+      if(registerKill(e, true)){
+        enemies.splice(j,1);
+      }
     }
   }
 }
@@ -818,6 +973,17 @@ function showBanner(){
 // ---------- RENDER ----------
 function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // --- screen shake (boss awakening / orb bursts) ---
+  let shakeX = 0, shakeY = 0;
+  if(screenShake.timer > 0){
+    const p = screenShake.timer / screenShake.duration; // 1 -> 0
+    const mag = screenShake.strength * p;
+    shakeX = (Math.random()*2-1) * mag;
+    shakeY = (Math.random()*2-1) * mag;
+  }
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
 
   // --- map (offset by camera) ---
   if(IMG.map.loaded){
@@ -959,6 +1125,38 @@ function render(){
     parryPulse.active = false;
   }
 
+  // --- boss "awakening" pulse (big red ring where the mutation is happening) ---
+  if(bossPulse.active && bossPulse.timer > 0){
+    const p = 1 - bossPulse.timer / bossPulse.duration;
+    const bx = bossPulse.x - camera.x;
+    const by = bossPulse.y - camera.y;
+    const ringCount = 3;
+    for(let i=0;i<ringCount;i++){
+      const ringP = clamp(p*1.3 - i*0.18, 0, 1);
+      if(ringP<=0 || ringP>=1) continue;
+      const r = 20 + ringP * 260;
+      ctx.save();
+      ctx.globalAlpha = (1-ringP) * 0.55;
+      ctx.strokeStyle = '#ff2222';
+      ctx.lineWidth = 9 - ringP*5;
+      ctx.shadowColor = '#ff0000';
+      ctx.shadowBlur = 28;
+      ctx.beginPath();
+      ctx.arc(bx, by, r, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.globalAlpha = 0.18 + 0.12*Math.sin(performance.now()/60);
+    ctx.fillStyle = '#ff3333';
+    ctx.beginPath();
+    ctx.arc(bx, by, 34, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore(); // end screen-shake transform
+
   updateUI();
 }
 
@@ -1065,6 +1263,15 @@ function updateUI(){
   document.getElementById('dashBar').style.width = dashPct+'%';
   document.getElementById('streakText').textContent = `Streak: ${player.killStreak}  •  Kills: ${player.totalKills}`;
 
+  const bossWrapEl = document.getElementById('bossBarWrap');
+  if(bossActive && bossEnemyRef){
+    bossWrapEl.classList.add('show');
+    document.getElementById('bossName').textContent = bossEnemyRef.bossName || 'MUTATED GREEN';
+    document.getElementById('bossBar').style.width = Math.max(0, 100*bossEnemyRef.hp/bossEnemyRef.maxHp)+'%';
+  } else {
+    bossWrapEl.classList.remove('show');
+  }
+
   const bannerEl = document.getElementById('banner');
   if(banner.timer>0){
     bannerEl.textContent = banner.text;
@@ -1093,6 +1300,9 @@ function restartGame(){
   lastParriedOrbPos = null; parryPulse.active = false;
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
+  bossTriggered = false; bossEnemyRef = null; bossActive = false;
+  screenShake = { timer:0, duration:1, strength:0 };
+  bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
   document.getElementById('deathScreen').style.display = 'none';
   lastTime = performance.now();
 }
