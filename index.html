@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>MINI ULTRAKILL</title>
 <style>
-  html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Trebuchet MS',Arial,sans-serif;}
+  html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Trebuchet MS',Arial,sans-serif;user-select:none;-webkit-user-select:none;-moz-user-select:none;} canvas{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
   #game{display:block;cursor:crosshair;}
   #ui{
     position:fixed;top:0;left:0;width:100%;height:100%;
@@ -59,7 +59,7 @@
   <div id="banner"></div>
   <div id="calibText"></div><div id="parryPulse"></div>
   <div id="help">
-    WASD move &nbsp;•&nbsp; Mouse aim &nbsp;•&nbsp; Left Click shoot &nbsp;•&nbsp; Q dash / dodge
+    WASD move &nbsp;•&nbsp; Mouse aim &nbsp;•&nbsp; Left Click shoot &nbsp;•&nbsp; 1 Gun &nbsp;•&nbsp; 2 Shotgun &nbsp;•&nbsp; F parry &nbsp;•&nbsp; Q dash
   </div>
 </div>
 <div id="deathScreen">
@@ -70,7 +70,9 @@
 
 <script>
 /* ======================================================================
-   bu oyun ananın amı tarafından yapılmıstır
+   MINI ULTRAKILL - 2D top-down action game
+   Images are loaded from the images/ folder. Falls back to placeholders
+   if a file is missing, so the game still runs.
    ====================================================================== */
 
 // ---------- CANVAS SETUP ----------
@@ -108,6 +110,7 @@ const IMG = {
   green:  loadImg('images/Green.png'),
   glob:   loadImg('images/Glob.png'),
   gun:    loadImg('images/gun.png'),
+  shotgun: loadImg('images/shotgun.png'),
   bullet: loadImg('images/bullet.png'),
   orb:    loadImg('images/yellow-orb.png'), // rename/adjust this path if your file is named differently
   explosion: loadImg('images/explosion.png'),
@@ -182,6 +185,7 @@ function dist(ax,ay,bx,by){ return Math.hypot(ax-bx, ay-by); }
 const keys = {};
 let mouseScreen = { x: 0, y: 0 };
 let mouseDown = false;
+let weapon = 'gun';
 let parryCooldown = 0;
 let parryPulseTimer = 0;
 let parryPulse = { x: 0, y: 0, active: false };
@@ -191,6 +195,9 @@ let deathPieces = [];
 let corpsePieces = [];
 
 window.addEventListener('keydown', e => {
+  if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
+  if(e.key === '1') weapon='gun';
+  if(e.key === '2') weapon='shotgun';
   keys[e.key.toLowerCase()] = true;
   if(e.key.toLowerCase() === 'q') tryDash();
   if(e.key.toLowerCase() === 'f' && !e.repeat) tryParry();
@@ -201,15 +208,34 @@ canvas.addEventListener('mousemove', e => {
   mouseScreen.x = e.clientX - r.left;
   mouseScreen.y = e.clientY - r.top;
 });
-canvas.addEventListener('mousedown', () => mouseDown = true);
+canvas.addEventListener('mousedown', e => { if(e.button===0){ mouseDown=true; shoot(); } });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('dragstart', e => e.preventDefault());
+window.addEventListener('selectstart', e => e.preventDefault());
 window.addEventListener('mouseup', () => mouseDown = false);
 
 function tryParry(){
   if(!player.alive || parryCooldown > 0) return;
-  parryCooldown = 0.12;
+  parryCooldown = 0.28;
+
+  // Shotgun mermilerini F ile çok kısa menzilde parryle.
+  // Orb'a mermi değince parry yok: parry anında merminin bulunduğu yerde patlar.
+  let shotgunParried = false;
+  for(let i=bullets.length-1;i>=0;i--){
+    const b = bullets[i];
+    if(b.type !== 'shotgun') continue;
+    if(dist(b.x,b.y,player.x,player.y) <= 105){
+      const ex={x:b.x,y:b.y};
+      bullets.splice(i,1);
+      spawnExplosion(ex.x,ex.y,1.65);
+      damageEnemiesInExplosion(ex.x,ex.y,150,140);
+      shotgunParried = true;
+    }
+  }
 
   let parried = false;
-  const range = 145;
+  const range = 88;
 
   for(const o of orbs){
     if(o.parried) continue;
@@ -260,6 +286,11 @@ function tryParry(){
     }
   }
 
+  if(shotgunParried){
+    parryPulse.x = player.x; parryPulse.y = player.y; parryPulse.active = true;
+    parryPulseTimer = 0.38;
+  }
+
   if(parried){
     parryPulseTimer = 0.38;
     // Pulse artık ekranın merkezinden değil, parrylenen orbun GERÇEK konumundan çıkar.
@@ -285,7 +316,7 @@ const player = {
   dashCooldown: 0, dashCooldownMax: 0.85,
   dashing: false, dashTimer: 0, dashDuration: 0.16, dashSpeed: 920,
   invuln: 0, // invulnerability time left (s)
-  fireCooldown: 0, fireRate: 0.14,
+  fireCooldown: 0, fireRate: 0.34, shotgunRate: 0.85,
   killStreak: 0, totalKills: 0,
   alive: true,
 };
@@ -309,17 +340,32 @@ function playerPortrait(){
 let bullets = [];
 function shoot(){
   if(player.fireCooldown > 0 || !player.alive) return;
-  player.fireCooldown = player.fireRate;
   const mw = mouseWorld();
   const ang = Math.atan2(mw.y - player.y, mw.x - player.x);
   const muzzleDist = player.radius + 18;
-  bullets.push({
-    x: player.x + Math.cos(ang)*muzzleDist,
-    y: player.y + Math.sin(ang)*muzzleDist,
-    vx: Math.cos(ang) * 780,
-    vy: Math.sin(ang) * 780,
-    dmg: 22,
-  });
+  if(weapon === 'shotgun'){
+    player.fireCooldown = player.shotgunRate;
+    for(let k=0;k<3;k++){
+      const spread = (k-1)*0.14 + (Math.random()-0.5)*0.035;
+      const a = ang + spread;
+      bullets.push({
+        x:player.x+Math.cos(a)*muzzleDist,
+        y:player.y+Math.sin(a)*muzzleDist,
+        vx:Math.cos(a)*690,
+        vy:Math.sin(a)*690,
+        // Shotgun has distance falloff based on the NORMAL gun's 22 damage:
+        // very close = 1.5x (33), normal range = 0.5x (11), far = 0.25x (5.5).
+        dmg:22,
+        type:'shotgun',
+        life:1.1,
+        spawnX:player.x,
+        spawnY:player.y
+      });
+    }
+  } else {
+    player.fireCooldown = player.fireRate;
+    bullets.push({x:player.x+Math.cos(ang)*muzzleDist,y:player.y+Math.sin(ang)*muzzleDist,vx:Math.cos(ang)*780,vy:Math.sin(ang)*780,dmg:22,type:'gun'});
+  }
 }
 
 // ---------- YELLOW ORBS (Glob projectile) ----------
@@ -456,7 +502,7 @@ function update(dt){
   if(parryCooldown > 0) parryCooldown -= dt;
   if(parryPulseTimer > 0) parryPulseTimer -= dt;
 
-  if(mouseDown) shoot();
+  // Ateş sadece tıklamada; basılı tutmak otomatik ateş etmez.
 
   // ----- camera -----
   updateCamera();
@@ -466,11 +512,21 @@ function update(dt){
     const b = bullets[i];
     b.x += b.vx*dt; b.y += b.vy*dt;
     // Bullets now live until they hit something or touch a world wall.
+    if(b.life !== undefined){ b.life -= dt; if(b.life<=0){ bullets.splice(i,1); continue; } }
     if(b.x<=0 || b.y<=0 || b.x>=WORLD.w || b.y>=WORLD.h){ bullets.splice(i,1); continue; }
     for(let j=enemies.length-1;j>=0;j--){
       const e = enemies[j];
       if(dist(b.x,b.y,e.x,e.y) < e.radius + 6){
-        e.hp -= b.dmg;
+        // Shotgun pellet damage depends on how far THIS pellet traveled.
+        let hitDamage = b.dmg;
+        if(b.type === 'shotgun'){
+          const travel = Math.hypot(b.x-b.spawnX, b.y-b.spawnY);
+          if(travel <= 85) hitDamage = 22 * 1.5;       // very close: 1.5x normal gun
+          else if(travel <= 260) hitDamage = 22 * 0.5; // normal range: half normal gun
+          else hitDamage = 22 * 0.25;                  // far range: quarter normal gun
+        }
+        e.hp -= hitDamage;
+        e.hitFlash = 0.16;
         bullets.splice(i,1);
         if(e.hp <= 0){
           // Normal silah ölümü: Green ve Glob aynı 3x3 ceset parçalarına ayrılır.
@@ -494,7 +550,7 @@ function update(dt){
       const tx = o.target.x - o.x;
       const ty = o.target.y - o.y;
       const td = Math.hypot(tx,ty) || 1;
-      const desiredSpeed = 1150;
+      const desiredSpeed = 1320;
       const desiredVx = tx/td * desiredSpeed;
       const desiredVy = ty/td * desiredSpeed;
       const steer = Math.min(1, dt * 9);
@@ -522,6 +578,7 @@ function update(dt){
         const e=enemies[j];
         if(dist(o.x,o.y,e.x,e.y) < e.radius+22){
           e.hp -= o.dmg;
+          e.hitFlash = 0.22;
           spawnExplosion(e.x,e.y,1.0);
           orbs.splice(i,1);
 
@@ -541,6 +598,7 @@ function update(dt){
 
   // ----- enemy AI -----
   for(const e of enemies){
+    if(e.hitFlash > 0) e.hitFlash -= dt;
     if(e.type === 'green') updateGreen(e, dt);
     else updateGlob(e, dt);
   }
@@ -623,7 +681,7 @@ function updateGlob(e, dt){
     const a2 = Math.atan2(player.y-e.y, player.x-e.x);
     orbs.push({
       x:e.x, y:e.y,
-      vx: Math.cos(a2)*720, vy: Math.sin(a2)*720,
+      vx: Math.cos(a2)*980, vy: Math.sin(a2)*980,
       dmg: 14,
     });
   }
@@ -661,6 +719,24 @@ function spawnDeathPieces(){
   spawnExplosion(player.x,player.y,1.35);
 }
 
+
+function damageEnemiesInExplosion(x,y,radius,damage){
+  for(let j=enemies.length-1;j>=0;j--){
+    const e=enemies[j];
+    const d=dist(x,y,e.x,e.y);
+    if(d>radius+e.radius) continue;
+    const scale=Math.max(0.35,1-d/(radius+e.radius));
+    e.hp -= damage*scale;
+    e.hitFlash=0.28;
+    if(e.hp<=0){
+      spawnCorpsePieces(e,true);
+      enemies.splice(j,1);
+      player.killStreak++;
+      player.totalKills++;
+      showBanner();
+    }
+  }
+}
 
 function spawnCorpsePieces(e, exploded=false){
   const img = e.type === 'glob' ? IMG.glob : IMG.green;
@@ -925,7 +1001,8 @@ function drawPlayer(){
   const gx = sx + Math.cos(aimAngle) * gunDist;
   const gy = sy + Math.sin(aimAngle) * gunDist;
   const gunAngle = aimAngle + GUN_ART_OFFSET;
-  drawRotatedImage(IMG.gun, gx, gy, 46, 46, gunAngle, '#888888', 'GUN');
+  const weaponImg = weapon==='shotgun' ? IMG.shotgun : IMG.gun;
+  drawRotatedImage(weaponImg, gx, gy, weapon==='shotgun'?58:46, weapon==='shotgun'?58:46, gunAngle, '#888888', weapon==='shotgun'?'SHOTGUN':'GUN');
 }
 
 function drawEnemy(e){
@@ -949,14 +1026,17 @@ function drawEnemy(e){
   } else {
     drawPlaceholder(sx, sy, size, size, e.type==='green' ? '#2ecc40':'#e6c419', e.type.toUpperCase(), 0);
   }
+  // Health bar yerine hasar alınca kısa kırmızı flash.
+  if(e.hitFlash > 0){
+    ctx.globalCompositeOperation='source-atop';
+    ctx.globalAlpha=Math.min(0.78,e.hitFlash/0.16);
+    ctx.fillStyle='#ff2222';
+    ctx.fillRect(sx-size/2,sy-size/2,size,size);
+    ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=1;
+  }
   ctx.restore();
 
-  // hp bar
-  const w = 40;
-  ctx.fillStyle = '#220000';
-  ctx.fillRect(sx-w/2, sy-e.radius-16, w, 6);
-  ctx.fillStyle = e.type==='green' ? '#33ff55' : '#ffdd33';
-  ctx.fillRect(sx-w/2, sy-e.radius-16, w*(e.hp/e.maxHp), 6);
 }
 
 function updateUI(){
