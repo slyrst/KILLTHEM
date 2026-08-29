@@ -219,18 +219,32 @@ function tryParry(){
   if(!player.alive || parryCooldown > 0) return;
   parryCooldown = 0.28;
 
-  // Shotgun mermisini parryleyince mermi kaybolmaz: bulunduğu yerde patlar ve düz devam eden 2x hasarlı patlayıcı mermi olur.
+  // Shotgun parry: normal atışta pelletler saçılır,
+  // parrylenince tüm pelletler mouse yönüne TAM DÜZ çevrilir.
   let shotgunParried = false;
+  const parryAim = Math.atan2(
+    mouseWorld().y - player.y,
+    mouseWorld().x - player.x
+  );
+
   for(const b of bullets){
     if(b.type !== 'shotgun' || b.parriedExplosive) continue;
     if(dist(b.x,b.y,player.x,player.y) <= 105){
+      const speed = 980;
+
+      // Mevcut spread yönünü sıfırla: hepsi aynı yöne gider.
+      b.vx = Math.cos(parryAim) * speed;
+      b.vy = Math.sin(parryAim) * speed;
+
+      b.parriedExplosive = true;
+      b.explosive = true;
+      b.dmgMultiplier = 2;
+      b.explosionRadius = 125;
+      b.explosionDamage = 120;
+      b.life = 1.35;
+
       spawnExplosion(b.x,b.y,1.15);
-      b.parriedExplosive=true;
-      b.explosive=true;
-      b.dmgMultiplier=2;
-      b.explosionRadius=125;
-      b.explosionDamage=120;
-      shotgunParried=true;
+      shotgunParried = true;
     }
   }
 
@@ -345,23 +359,32 @@ function shoot(){
   const muzzleDist = player.radius + 18;
   if(weapon === 'shotgun'){
     player.fireCooldown = player.shotgunRate;
-    for(let k=0;k<3;k++){
-      const a = ang;
-      const side = (k-1)*11;
-      const px = -Math.sin(a), py = Math.cos(a);
+
+    // NORMAL SHOTGUN: 5 pellet, gerçek spread.
+    // Pelletler namludan yan yana çıkar ve açıları giderek açılır.
+    const pelletAngles = [-0.16, -0.08, 0, 0.08, 0.16];
+
+    for(let k=0;k<pelletAngles.length;k++){
+      const a = ang + pelletAngles[k];
+
+      // Çıkışta pelletlerin yan yana görünmesi için küçük yatay offset.
+      const side = (k - 2) * 7;
+      const px = -Math.sin(ang);
+      const py = Math.cos(ang);
+
       bullets.push({
-        x:player.x+Math.cos(a)*muzzleDist + px*side,
-        y:player.y+Math.sin(a)*muzzleDist + py*side,
+        x:player.x+Math.cos(ang)*muzzleDist + px*side,
+        y:player.y+Math.sin(ang)*muzzleDist + py*side,
         vx:Math.cos(a)*690,
         vy:Math.sin(a)*690,
-        // Shotgun has distance falloff based on the NORMAL gun's 22 damage:
-        // very close = 1.5x (33), normal range = 0.5x (11), far = 0.25x (5.5).
         dmg:22,
         type:'shotgun',
         life:1.1,
         spawnX:player.x,
         spawnY:player.y,
-        parriedExplosive:false, explosive:false, dmgMultiplier:1
+        parriedExplosive:false,
+        explosive:false,
+        dmgMultiplier:1
       });
     }
   } else {
