@@ -2585,6 +2585,14 @@ function restartGame(){
   document.getElementById('cubeSubtitle').textContent='';
   stopDivine();
 
+  // Tüm müzikleri durdur ve sıfırla
+  musicGame.pause();
+  musicGame.currentTime = 0;
+  musicGame2.pause();
+  musicGame2.currentTime = 0;
+  divineMusic.pause();
+  divineMusic.currentTime = 0;
+
   player.x = WORLD.w/2; player.y = WORLD.h/2;
   player.hp = player.maxHp;
   player.alive = true;
@@ -2605,7 +2613,12 @@ function restartGame(){
   botMoveX = 0; botMoveY = 0;
   document.getElementById('deathScreen').style.display = 'none';
   lastTime = performance.now();
-  if(playingReal && !autoPilot && currentStage===3) triggerCubeV2();
+
+  // Cube V2 restartında diyalog olmasın, direkt boss fight başlasın
+  if(playingReal && !autoPilot && currentStage===3){
+    cubeDialogueDone = true; // Diyalog atla
+    triggerCubeV2();
+  }
 }
 
 // ---------- SETTINGS ----------
