@@ -214,7 +214,7 @@
 #settingsScreen label{color:#fff !important;}
 #settingsScreen input[type="range"]{accent-color:#fff;}
 
-#tutorialOverlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;pointer-events:none;background:#000;color:#fff;opacity:0;transition:opacity 1.2s ease;}
+#tutorialOverlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;pointer-events:none;background:transparent;color:#fff;opacity:0;transition:opacity .45s ease;}
 #tutorialOverlay.show{display:flex;opacity:1;}
 #tutorialOverlay.wake{opacity:0;}
 #tutorialBox{text-align:center;font-size:26px;font-weight:bold;letter-spacing:3px;text-shadow:0 0 14px rgba(255,255,255,.55);max-width:720px;padding:30px;}
@@ -2024,14 +2024,14 @@ function tutorialShow(title, hint=''){
 }
 function tutorialHide(){
   const ov=document.getElementById('tutorialOverlay');
-  ov.classList.remove('show'); ov.classList.add('wake');
+  ov.classList.remove('show');
+  ov.classList.add('wake');
   setTimeout(()=>{
-    // Don't hide a newer tutorial prompt that appeared during the fade.
     if(!ov.classList.contains('show')){
       ov.style.display='none';
       ov.classList.remove('wake');
     }
-  },1200);
+  },450);
 }
 function startWakeTutorial(){
   // First: pure darkness, then the world slowly comes into view like waking up.
