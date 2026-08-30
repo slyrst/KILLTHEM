@@ -644,6 +644,26 @@ function tryParry(){
     }
   }
 
+  // Cube V2 gun bullets are normal parryable projectiles.
+  let cubeBulletParried = false;
+  const cubeBulletParryRange = 112 * DIFF.parryRangeMult;
+  for(const cb of cubeBullets){
+    if(cb.parried) continue;
+    if(dist(cb.x,cb.y,player.x,player.y) <= cubeBulletParryRange){
+      const mw = mouseWorld();
+      const aim = Math.atan2(mw.y-player.y, mw.x-player.x);
+      const speed = Math.max(1100, Math.hypot(cb.vx,cb.vy)*1.45);
+      cb.x = player.x; cb.y = player.y;
+      cb.vx = Math.cos(aim)*speed; cb.vy = Math.sin(aim)*speed;
+      cb.owner = 'player'; cb.parried = true;
+      cb.dmg = 115 * DIFF.playerDmgMult;
+      cubeBulletParried = true;
+      lastParriedOrbPos = {x:cb.x,y:cb.y};
+      player.hp = player.maxHp;
+      spawnExplosion(cb.x,cb.y,0.55);
+    }
+  }
+
   // Shotgun mermisini parryleyince mermi kaybolmaz: bulunduğu yerde patlar ve düz devam eden 2x hasarlı patlayıcı mermi olur.
   let shotgunParried = false;
   const shotgunParryRange = 105 * DIFF.parryRangeMult;
@@ -753,7 +773,7 @@ function tryParry(){
   // gets a tiny cooldown, just long enough to stop one press registering
   // twice in the same frame - short enough that fast, back-to-back orbs
   // (like the boss's 5-orb burst) can each still be parried in turn.
-  if(parried || shotgunParried || swordParried){
+  if(parried || shotgunParried || swordParried || cubeBulletParried){
     parryCooldown = 0.08;
     if(!autoPilot) playSFX(SFX.parry, parryVolume);
   }
@@ -888,6 +908,7 @@ function updateAutoPilot(dt){
 // ---------- BULLETS (player) ----------
 let bullets = [];
 let swordProjectiles = [];
+let cubeBullets = [];
 function shoot(){
   if(player.fireCooldown > 0 || !player.alive) return;
   const mw = mouseWorld();
@@ -1238,9 +1259,13 @@ function update(dt){
         // Cube V2 (while its deflect phase is up) and a Knight with its
         // sword raised knock the bullet straight back at the player as a
         // parryable hazard orb, instead of taking damage from it.
-        if(!autoPilot && !b.explosive && e.type==='cubev2' && e.deflectActive){
+        if(!autoPilot && !b.explosive && e.type==='cubev2' && e.parryActive){
           const backAng = Math.atan2(player.y-e.y, player.x-e.x);
-          orbs.push({x:e.x,y:e.y,vx:Math.cos(backAng)*820,vy:Math.sin(backAng)*820, dmg: Math.max(14, b.dmg*1.2)});
+          cubeBullets.push({
+            x:e.x,y:e.y,
+            vx:Math.cos(backAng)*900,vy:Math.sin(backAng)*900,
+            dmg:Math.max(16,b.dmg*1.25),life:3.0,owner:'cube',parried:false,angle:backAng
+          });
           bullets.splice(i,1);
           spawnExplosion(b.x,b.y,0.45);
           break;
@@ -1310,6 +1335,29 @@ function update(dt){
           break;
         }
       }
+    }
+  }
+
+  // ----- Cube V2 gun bullets -----
+  for(let i=cubeBullets.length-1;i>=0;i--){
+    const cb=cubeBullets[i];
+    cb.life-=dt;
+    cb.x+=cb.vx*dt; cb.y+=cb.vy*dt;
+    cb.angle=Math.atan2(cb.vy,cb.vx);
+    if(cb.life<=0 || cb.x<=0 || cb.y<=0 || cb.x>=WORLD.w || cb.y>=WORLD.h){
+      cubeBullets.splice(i,1); continue;
+    }
+    if(cb.owner==='cube' && player.invuln<=0 && dist(cb.x,cb.y,player.x,player.y)<player.radius+7){
+      damagePlayer(cb.dmg);
+      spawnExplosion(cb.x,cb.y,0.45);
+      cubeBullets.splice(i,1); continue;
+    }
+    if(cb.owner==='player' && cubeV2Ref && !cubeV2Ref.mutating && dist(cb.x,cb.y,cubeV2Ref.x,cubeV2Ref.y)<cubeV2Ref.radius+8){
+      const e=cubeV2Ref;
+      e.hp-=cb.dmg; e.hitFlash=0.18;
+      spawnExplosion(cb.x,cb.y,0.55);
+      cubeBullets.splice(i,1);
+      if(e.hp<=0 && registerKill(e,true)) enemies.splice(enemies.indexOf(e),1);
     }
   }
 
@@ -1592,35 +1640,41 @@ function triggerCubeV2(){
   for(const en of enemies) spawnExplosion(en.x, en.y, 1.2);
   enemies = [];
   orbs = [];
+  swordProjectiles = [];
+  cubeBullets = [];
 
-  screenShake = { timer:1.2, duration:1.2, strength:20 };
+  screenShake = { timer:1.0, duration:1.0, strength:16 };
 
+  // Cube V2 is the same scale as the player, not a giant boss.
   const cx = player.x;
-  const cy = player.y - 260;
-  const baseR = 40;
+  const cy = player.y - 190;
+  const baseR = player.radius;
   const ghp = 900 * DIFF.bossHpMult;
   const e = {
     type:'cubev2', x:cx, y:cy, radius:baseR, hp:ghp, maxHp:ghp,
     isBoss:true, bossName:'CUBE V2',
-    baseRadius:baseR, targetRadius: baseR*3.2,
-    mutating:true, growTimer:2.8, growDuration:2.8,
-    speed:60, dmg: 40,
-    orbBurstTimer: 2.0, orbBurstRate: 2.4,
-    hitFlash:0, deflectActive:false, deflectTimer: 3.4,
+    baseRadius:baseR, targetRadius:baseR, mutating:false, growTimer:0, growDuration:0,
+    speed:255, dmg:28,
+    gunFireTimer:0.75, gunFireRate:0.62,
+    dashTimer:2.0, dashCooldown:2.0, dashing:false, dashTimerActive:0,
+    dashFrom:{x:cx,y:cy}, dashTo:{x:cx,y:cy},
+    parryTimer:1.7, parryActive:false, parryDuration:0.55,
+    hitFlash:0, aimAngle:Math.PI/2
   };
   enemies.push(e);
   cubeV2Ref = e;
   bossEnemyRef = e;
   bossActive = true;
 
+  // Brief awakening pulse, then the dialogue. Combat stays frozen until the dialogue ends.
   bossPulse.active = true;
-  bossPulse.timer = e.growDuration;
-  bossPulse.duration = e.growDuration;
+  bossPulse.timer = 0.9;
+  bossPulse.duration = 0.9;
   bossPulse.x = e.x; bossPulse.y = e.y;
 
   setTimeout(() => {
     if(cubeV2Ref===e && player.alive && currentStage===2) startCubeDialogue();
-  }, 900);
+  }, 450);
 }
 
 function cubeV2OrbBurst(e){
@@ -1638,43 +1692,88 @@ function cubeV2OrbBurst(e){
   screenShake.strength = Math.max(screenShake.strength, 7);
 }
 
+function cubeV2Shoot(e){
+  const aim = Math.atan2(player.y-e.y, player.x-e.x);
+  e.aimAngle = aim;
+  const speed = 820;
+  cubeBullets.push({
+    x:e.x+Math.cos(aim)*(e.radius+18),
+    y:e.y+Math.sin(aim)*(e.radius+18),
+    vx:Math.cos(aim)*speed, vy:Math.sin(aim)*speed,
+    dmg:e.dmg, life:3.0, owner:'cube', parried:false, angle:aim
+  });
+}
+
 function updateCubeV2(e, dt){
-  if(e.mutating){
-    e.growTimer -= dt;
-    const t = clamp(1 - Math.max(0,e.growTimer)/e.growDuration, 0, 1);
-    const eased = 1 - Math.pow(1-t, 2);
-    e.radius = e.baseRadius + (e.targetRadius - e.baseRadius) * eased;
-    if(e.growTimer <= 0){
-      e.mutating = false;
-      e.radius = e.targetRadius;
-    }
-    return;
-  }
+  if(cubeDialogueActive) return;
 
   const d = dist(e.x,e.y,player.x,player.y);
-  if(d > 420){
-    const ang = Math.atan2(player.y-e.y, player.x-e.x);
-    e.x += Math.cos(ang)*e.speed*dt;
-    e.y += Math.sin(ang)*e.speed*dt;
-  } else if(d < 260){
-    const ang = Math.atan2(e.y-player.y, e.x-player.x);
-    e.x += Math.cos(ang)*e.speed*dt;
-    e.y += Math.sin(ang)*e.speed*dt;
-  }
-  e.x = clamp(e.x, e.radius, WORLD.w-e.radius);
-  e.y = clamp(e.y, e.radius, WORLD.h-e.radius);
+  const desiredAim = Math.atan2(player.y-e.y, player.x-e.x);
+  let angleDiff = Math.atan2(Math.sin(desiredAim-e.aimAngle), Math.cos(desiredAim-e.aimAngle));
+  e.aimAngle += angleDiff * Math.min(1,dt*7);
 
-  e.deflectTimer -= dt;
-  if(e.deflectTimer <= 0){
-    e.deflectActive = !e.deflectActive;
-    e.deflectTimer = e.deflectActive ? 2.0 : 3.2;
+  // Short aggressive dash directly at the player.
+  if(e.dashing){
+    e.dashTimerActive -= dt;
+    const t=1-Math.max(0,e.dashTimerActive)/0.24;
+    e.x=e.dashFrom.x+(e.dashTo.x-e.dashFrom.x)*t;
+    e.y=e.dashFrom.y+(e.dashTo.y-e.dashFrom.y)*t;
+    if(dist(e.x,e.y,player.x,player.y)<e.radius+player.radius && player.invuln<=0){
+      damagePlayer(e.dmg+8);
+    }
+    if(e.dashTimerActive<=0){
+      e.dashing=false;
+      e.dashTimer=1.8+Math.random()*1.2;
+    }
+  } else {
+    e.dashTimer-=dt;
+    if(e.dashTimer<=0 && d<520){
+      e.dashing=true;
+      e.dashTimerActive=0.24;
+      e.dashFrom={x:e.x,y:e.y};
+      e.dashTo={x:player.x,y:player.y};
+      screenShake.timer=Math.max(screenShake.timer,0.16);
+      screenShake.duration=Math.max(screenShake.duration,0.16);
+      screenShake.strength=Math.max(screenShake.strength,5);
+    } else {
+      // Circle the player at roughly mid range, like the menu player AI.
+      const targetDist=260;
+      const radial=d-targetDist;
+      const toward=Math.max(-1,Math.min(1,radial/180));
+      const strafe=Math.sin(performance.now()/420)>0?1:-1;
+      const ang=Math.atan2(player.y-e.y,player.x-e.x);
+      const mx=Math.cos(ang)*toward + Math.cos(ang+Math.PI/2)*strafe*0.72;
+      const my=Math.sin(ang)*toward + Math.sin(ang+Math.PI/2)*strafe*0.72;
+      const ml=Math.hypot(mx,my)||1;
+      e.x+=mx/ml*e.speed*dt; e.y+=my/ml*e.speed*dt;
+    }
   }
 
-  e.orbBurstTimer -= dt;
-  if(e.orbBurstTimer <= 0){
-    cubeV2OrbBurst(e);
-    e.orbBurstTimer = e.orbBurstRate;
+  // The Cube occasionally raises its gun and parries player bullets.
+  e.parryTimer-=dt;
+  if(e.parryTimer<=0){
+    e.parryActive=true;
+    e.parryTimer=e.parryDuration + 1.4 + Math.random()*1.8;
+    e.parryEndTimer=e.parryDuration;
   }
+  if(e.parryActive){
+    e.parryEndTimer-=dt;
+    if(e.parryEndTimer<=0) e.parryActive=false;
+  }
+
+  // Gunfire is independent from the dash/parry animation.
+  e.gunFireTimer-=dt;
+  if(e.gunFireTimer<=0){
+    cubeV2Shoot(e);
+    e.gunFireTimer=e.gunFireRate*(0.8+Math.random()*0.35);
+  }
+
+  if(dist(e.x,e.y,player.x,player.y)<e.radius+player.radius && player.invuln<=0){
+    damagePlayer(10);
+  }
+
+  e.x=clamp(e.x,e.radius,WORLD.w-e.radius);
+  e.y=clamp(e.y,e.radius,WORLD.h-e.radius);
 }
 
 function mutateGlobStage1(e){
@@ -1989,6 +2088,16 @@ function render(){
     ctx.restore();
   }
 
+  // Cube V2 gun bullets (same visual bullet as the player gun).
+  for(const cb of cubeBullets){
+    const sx=cb.x-camera.x, sy=cb.y-camera.y;
+    ctx.save();
+    ctx.shadowColor=cb.parried?'#fff06a':'#ff5555';
+    ctx.shadowBlur=cb.parried?22:14;
+    drawRotatedImage(IMG.bullet,sx,sy,cb.parried?30:26,cb.parried?14:12,Math.atan2(cb.vy,cb.vx),'#ff5555','');
+    ctx.restore();
+  }
+
   // bullets / orbs (drawn on top)
   for(const b of bullets){
     const sx = b.x - camera.x, sy = b.y - camera.y;
@@ -2224,32 +2333,50 @@ function drawKnightEnemy(e, sx, sy){
 }
 
 function drawCubeV2(e, sx, sy){
-  const size = e.radius*2 + 14;
-  const hue = (performance.now()/8) % 360;
+  // Same body scale as the player, using angry.png.
+  const size = player.radius*2 + 20;
+  const facingLeft = Math.cos(e.aimAngle)<0;
 
   ctx.save();
-  if(e.deflectActive){
-    ctx.shadowColor = '#ffffff';
-    ctx.shadowBlur = 30;
+  if(e.parryActive){ ctx.shadowColor='#bfe8ff'; ctx.shadowBlur=28; }
+  else if(e.dashing){ ctx.shadowColor='#ff3333'; ctx.shadowBlur=26; }
+  else { ctx.shadowColor='#ff2222'; ctx.shadowBlur=18; }
+  ctx.translate(sx,sy);
+  if(facingLeft) ctx.scale(-1,1);
+  if(IMG.angry.loaded){
+    ctx.drawImage(IMG.angry,-size/2,-size/2,size,size);
   } else {
-    ctx.shadowColor = `hsl(${hue},100%,60%)`;
-    ctx.shadowBlur = 22;
-  }
-  if(IMG.hard.loaded){
-    ctx.filter = `hue-rotate(${hue}deg) saturate(2.4) brightness(1.05)`;
-    ctx.drawImage(IMG.hard, sx-size/2, sy-size/2, size, size);
-    ctx.filter = 'none';
-  } else {
-    drawPlaceholder(sx, sy, size, size, `hsl(${hue},90%,55%)`, 'CUBE V2', 0);
+    drawPlaceholder(0,0,size,size,'#cc2222','ANGRY',0);
   }
   ctx.restore();
 
-  if(e.hitFlash > 0){
+  // Same gun style/scale as the main-menu player.
+  const gunDist=player.radius+10;
+  const gx=sx+Math.cos(e.aimAngle)*gunDist;
+  const gy=sy+Math.sin(e.aimAngle)*gunDist;
+  drawRotatedImage(IMG.gun,gx,gy,46,46,e.aimAngle+GUN_ART_OFFSET,'#888','GUN');
+
+  if(e.parryActive){
     ctx.save();
-    ctx.globalAlpha = Math.min(0.55, e.hitFlash/0.16);
-    ctx.fillStyle = '#ff2222';
-    ctx.beginPath(); ctx.arc(sx, sy, size/2, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha=0.85;
+    ctx.strokeStyle='#bfe8ff'; ctx.lineWidth=4;
+    ctx.shadowColor='#bfe8ff'; ctx.shadowBlur=16;
+    ctx.beginPath(); ctx.arc(sx,sy,e.radius+15,0,Math.PI*2); ctx.stroke();
     ctx.restore();
+  }
+
+  if(e.dashing){
+    ctx.save();
+    ctx.globalAlpha=0.38;
+    ctx.strokeStyle='#ff3333'; ctx.lineWidth=5;
+    ctx.beginPath(); ctx.moveTo(sx-Math.cos(e.aimAngle)*35,sy-Math.sin(e.aimAngle)*35);
+    ctx.lineTo(sx-Math.cos(e.aimAngle)*80,sy-Math.sin(e.aimAngle)*80); ctx.stroke();
+    ctx.restore();
+  }
+
+  if(e.hitFlash>0){
+    ctx.save(); ctx.globalAlpha=Math.min(0.6,e.hitFlash/0.16);
+    ctx.fillStyle='#ff2222'; ctx.beginPath(); ctx.arc(sx,sy,size/2,0,Math.PI*2); ctx.fill(); ctx.restore();
   }
 }
 
@@ -2337,13 +2464,13 @@ function restartGame(){
   player.alive = true;
   player.killStreak = 0; player.totalKills = 0;
   player.dashCooldown = 0; player.dashing = false; player.invuln = 0;
-  enemies = []; bullets = []; swordProjectiles = []; orbs = []; explosions = []; deathPieces = []; corpsePieces = [];
+  enemies = []; bullets = []; swordProjectiles = []; cubeBullets = []; orbs = []; explosions = []; deathPieces = []; corpsePieces = [];
   lastParriedOrbPos = null; parryPulse.active = false;
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
   weapon = 'gun'; // every level starts back on weapon 1
   nextBossThreshold = 100; bossEnemyRef = null; stageMutationTriggered=false; stage1Finished=false; bossActive = false;
-  stage2BossTriggered = false; stage2BossFinished = false; cubeV2Ref = null;
+  stage2BossTriggered = false; stage2BossFinished = false; cubeV2Ref = null; cubeBullets = [];
   screenShake = { timer:0, duration:1, strength:0 };
   bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
   healPulseTimer = 0;
@@ -2577,9 +2704,12 @@ function finishCubeDialogue(){
   cubeDialogueIndex=-1;
   document.getElementById('cubeDialogue').classList.remove('show','silence');
   document.getElementById('cubeSubtitle').textContent='';
-  // Divine is intentionally allowed to continue after the speech.
-  if(!divineMusic.paused) currentGameMusic().volume=0;
-  else currentGameMusic().volume=musicVolume;
+  // Divine takes over after the speech and stays in control until the boss is gone.
+  musicGame.volume=0; musicGame2.volume=0;
+  if(divineMusic.paused){
+    divineMusic.volume=musicVolume;
+    divineMusic.play().catch(()=>{});
+  }
 }
 
 function updateCubeDialogue(dt){
@@ -2599,11 +2729,15 @@ function updateCubeDialogue(dt){
   box.classList.toggle('silence',!line.text);
 
   if(line.divine){
-    currentGameMusic().pause();
-    currentGameMusic().volume=0;
+    musicGame.pause(); musicGame2.pause();
+    musicGame.currentTime=0; musicGame2.currentTime=0;
+    musicGame.volume=0; musicGame2.volume=0;
+    divineMusic.pause();
     divineMusic.currentTime=0;
-    divineMusic.volume=musicVolume;
-    divineMusic.play().catch(()=>{});
+    divineMusic.volume=Math.max(0,Math.min(1,musicVolume));
+    const playDivine=()=>divineMusic.play().catch(()=>{});
+    playDivine();
+    setTimeout(playDivine,120);
   }
 
   cubeDialogueTimer=line.duration+line.silence;
