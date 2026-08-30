@@ -518,6 +518,18 @@ let botStrafeDir = 1;
 let botStrafeTimer = 2;
 let botMoveX = 0, botMoveY = 0; // smoothed movement vector, avoids jittery direction snaps
 
+// Main menu bot için silah
+function setMenuBotWeapon(){
+  if(hasShotgun){
+    weapon = 'shotgun';
+  } else if(hasGun){
+    weapon = 'gun';
+  } else {
+    weapon = null;
+  }
+}
+setMenuBotWeapon();
+
 // ---------- DIFFICULTY ----------
 // easy: boss/entity HP halved, our damage doubled, parry MUCH more forgiving.
 // normal: exactly the current/original balance (all multipliers = 1).
@@ -529,6 +541,10 @@ const DIFFICULTIES = {
 };
 let selectedDifficulty = localStorage.getItem('kt_difficulty') || 'normal';
 let DIFF = DIFFICULTIES[selectedDifficulty] || DIFFICULTIES.normal;
+
+// Saved silahları yükle
+hasGun = !!localStorage.getItem('kt_has_gun');
+hasShotgun = !!localStorage.getItem('kt_has_shotgun');
 
 const diffToggleBtn = document.getElementById('diffToggleBtn');
 const diffOptions = document.getElementById('diffOptions');
@@ -554,6 +570,8 @@ let stage1Finished = false;
 let stageMutationTriggered = false;
 let stageWeaponCollected = false; // Stage 1'de silah alındı mı
 let stage2WeaponCollected = false; // Stage 2'de shotgun alındı mı
+let hasGun = false; // Gun silahı save edildi mi
+let hasShotgun = false; // Shotgun silahı save edildi mi
 
 // ---------- BOSS (MUTATED GREEN) ----------
 let nextBossThreshold = 100;  // kill count needed for the NEXT mutation - increments by 50 each time, so the boss keeps coming back (arasıra çıksın)
@@ -576,8 +594,8 @@ let cubeClonesSpawned = false;
 window.addEventListener('keydown', e => {
   if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
   if(e.key === 'Escape'){ togglePause(); return; }
-  if(e.key === '1' && weapon !== null) weapon='gun';
-  if(e.key === '2' && weapon !== null) weapon='shotgun';
+  if(e.key === '1' && hasGun) weapon='gun';
+  if(e.key === '2' && hasShotgun) weapon='shotgun';
   keys[e.key.toLowerCase()] = true;
   if(e.key.toLowerCase() === 'q') tryDash();
   if(e.key.toLowerCase() === 'f' && !e.repeat) tryParry();
@@ -942,7 +960,14 @@ function updateAutoPilot(dt){
   // occasionally swap weapons just to show both off
   botWeaponTimer -= dt;
   if(botWeaponTimer <= 0 && weapon !== null){
-    weapon = weapon === 'gun' ? 'shotgun' : 'gun';
+    // Sadece sahip olunan silahlar arasında değiştir
+    if(hasGun && hasShotgun){
+      weapon = weapon === 'gun' ? 'shotgun' : 'gun';
+    } else if(hasShotgun){
+      weapon = 'shotgun';
+    } else if(hasGun){
+      weapon = 'gun';
+    }
     botWeaponTimer = 4 + Math.random()*4;
   }
 
@@ -1545,16 +1570,24 @@ function update(dt){
     wp.bobOffset += dt * 3;
     if(dist(player.x, player.y, wp.x, wp.y) < player.radius + wp.radius){
       // Silah alındı
-      weapon = wp.type;
-      if(currentStage===1){
-        stageWeaponCollected = true;
-        spawnTimer = 1.0; // Enemy spawnlamayı başlat
-        banner.text = 'WEAPON ACQUIRED'; banner.timer = 1.5;
-      }
-      if(currentStage===2){
-        stage2WeaponCollected = true;
-        spawnTimer = 1.0; // Enemy spawnlamayı başlat
-        banner.text = 'SHOTGUN ACQUIRED'; banner.timer = 1.5;
+      if(wp.type === 'gun'){
+        hasGun = true;
+        localStorage.setItem('kt_has_gun', '1');
+        weapon = 'gun';
+        if(currentStage===1){
+          stageWeaponCollected = true;
+          spawnTimer = 1.0; // Enemy spawnlamayı başlat
+          banner.text = 'GUN ACQUIRED'; banner.timer = 1.5;
+        }
+      } else if(wp.type === 'shotgun'){
+        hasShotgun = true;
+        localStorage.setItem('kt_has_shotgun', '1');
+        weapon = 'shotgun';
+        if(currentStage===2){
+          stage2WeaponCollected = true;
+          spawnTimer = 1.0; // Enemy spawnlamayı başlat
+          banner.text = 'SHOTGUN ACQUIRED'; banner.timer = 1.5;
+        }
       }
       weaponPickups.splice(i,1);
       playSFX(SFX.heal, 0.6); // Pickup sesi
@@ -2790,19 +2823,48 @@ function launchStage(n){
 
   // Stage 1: Silah pickup spawn et, enemy spawnlama engelle
   if(n===1){
-    weapon = null; // Silahı sıfırla
     weaponPickups = [];
     stageWeaponCollected = false;
-    // Oyuncunun önüne silah koy
-    spawnWeaponPickup('gun', player.x, player.y - 100);
+    // Eğer gun daha önce alındıysa direkt ver, yoksa pickup koy
+    if(hasGun){
+      weapon = 'gun';
+      stageWeaponCollected = true;
+      spawnTimer = 1.0; // Enemy spawnlamayı başlat
+    } else {
+      weapon = null;
+      spawnWeaponPickup('gun', player.x, player.y - 100);
+    }
   }
   // Stage 2: Shotgun pickup spawn et
   if(n===2){
-    weapon = null; // Silahı sıfırla
     weaponPickups = [];
     stage2WeaponCollected = false;
-    // Oyuncunun önüne shotgun koy
-    spawnWeaponPickup('shotgun', player.x, player.y - 100);
+    // Gun varsa ver, yoksa pickup koy
+    if(hasGun){
+      weapon = 'gun';
+    } else {
+      weapon = null;
+      spawnWeaponPickup('gun', player.x, player.y - 100);
+    }
+    // Shotgun varsa ver, yoksa pickup koy
+    if(hasShotgun){
+      weapon = 'shotgun';
+      stage2WeaponCollected = true;
+      spawnTimer = 1.0; // Enemy spawnlamayı başlat
+    } else {
+      spawnWeaponPickup('shotgun', player.x, player.y - 100);
+    }
+  }
+  // Stage 3: Boss stages - tüm silahlar varsa ver
+  if(n===3){
+    weaponPickups = [];
+    if(hasShotgun){
+      weapon = 'shotgun';
+    } else if(hasGun){
+      weapon = 'gun';
+    } else {
+      weapon = null;
+    }
   }
 }
 document.getElementById('stage1Card').onclick=()=>launchStage(1);
