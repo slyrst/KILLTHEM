@@ -105,10 +105,39 @@
   #settingsPanel{min-width:340px;padding:28px;border:2px solid #fff;background:rgba(10,10,10,.94);box-shadow:0 0 30px rgba(255,255,255,.18);}
   .settingRow{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:18px 0;font-weight:bold;letter-spacing:2px;}
   .settingRow input{width:180px;}
-  #stageSelect{position:fixed;inset:0;z-index:65;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,.82);pointer-events:auto;gap:18px;}
+  #stageSelect{
+    position:fixed;inset:0;z-index:65;display:none;
+    flex-direction:column;align-items:flex-start;justify-content:flex-start;
+    background:rgba(0,0,0,.88);pointer-events:auto;
+    padding:48px 56px;overflow:auto;box-sizing:border-box;
+  }
   #stageSelect.show{display:flex;}
-  .stageCard{min-width:300px;padding:18px;border:2px solid #39ff6e;background:rgba(0,20,8,.7);color:#fff;text-align:center;cursor:pointer;font-weight:bold;letter-spacing:3px;}
-  .stageCard:hover{box-shadow:0 0 25px #39ff6e;}
+  #stageSelect h1{color:#fff;letter-spacing:8px;margin:0 0 28px;font-size:28px;}
+  #stageGrid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, 300px);
+    gap:26px;
+    width:100%;
+  }
+  .stageCard{
+    position:relative;width:300px;overflow:hidden;
+    border:2px solid #39ff6e;background:rgba(0,20,8,.7);color:#fff;
+    cursor:pointer;font-weight:bold;letter-spacing:2px;
+    transition:box-shadow .2s, transform .15s;
+  }
+  .stageCard:hover{box-shadow:0 0 25px #39ff6e;transform:translateY(-3px);}
+  .stageThumb{display:block;width:100%;height:160px;background:#0d1509;}
+  .stageCardTitle{padding:14px 12px;text-align:center;font-size:16px;}
+  .lockOverlay{
+    display:none;position:absolute;inset:0;
+    background:rgba(0,0,0,.75);align-items:center;justify-content:center;
+    flex-direction:column;gap:6px;text-align:center;color:#ff5c5c;
+    font-size:13px;letter-spacing:2px;padding:20px;box-sizing:border-box;
+  }
+  .lockOverlay .lockIcon{font-size:26px;}
+  .stageCard.locked{cursor:not-allowed;pointer-events:none;filter:grayscale(.9) brightness(.55);}
+  .stageCard.locked .lockOverlay{display:flex;}
+  .stageCard.locked:hover{box-shadow:none;transform:none;}
 
   #diffCorner{
     display:flex; flex-direction:column; align-items:flex-start; gap:10px;
@@ -141,59 +170,6 @@
   .diffBtn[data-diff="easy"].active{ border-color:#39ff6e; color:#39ff6e; background:rgba(57,255,110,.12); box-shadow:0 0 14px rgba(57,255,110,.5); }
   .diffBtn[data-diff="normal"].active{ border-color:#ffdd33; color:#ffdd33; background:rgba(255,221,51,.12); box-shadow:0 0 14px rgba(255,221,51,.5); }
   .diffBtn[data-diff="brutal"].active{ border-color:#ff3333; color:#ff5555; background:rgba(255,51,51,.14); box-shadow:0 0 14px rgba(255,51,51,.55); }
-
-  /* ---------- stage intro screen ---------- */
-  #stagesScreen{
-    position:fixed;inset:0;z-index:60;
-    display:flex;align-items:center;justify-content:center;flex-direction:column;
-    background:rgba(0,0,0,.6);
-    pointer-events:none;
-    opacity:0;transition:opacity .4s ease;
-  }
-  #stagesScreen.show{
-    opacity:1;
-    pointer-events:auto;
-    animation: stageGlitchIn 2.6s ease-out forwards;
-  }
-  #stagesScreen.hidden{ display:none; }
-  @keyframes stageGlitchIn{
-    0%  { opacity:0;   transform:translate(0,0) skewX(0deg); }
-    4%  { opacity:.7;  transform:translate(-9px,3px) skewX(-5deg); }
-    8%  { opacity:.05; transform:translate(7px,-4px) skewX(4deg); }
-    12% { opacity:.85; transform:translate(-6px,2px) skewX(-3deg); }
-    16% { opacity:.1;  transform:translate(6px,-3px) skewX(3deg); }
-    20% { opacity:.75; transform:translate(-4px,3px) skewX(-4deg); }
-    24% { opacity:.15; transform:translate(4px,-2px) skewX(2deg); }
-    28% { opacity:.65; transform:translate(-4px,1px) skewX(-2deg); }
-    32% { opacity:.2;  transform:translate(2px,-2px) skewX(1deg); }
-    36% { opacity:.32; transform:translate(0,0) skewX(0deg); }
-    55% { opacity:.55; }
-    75% { opacity:.78; }
-    100%{ opacity:1;   transform:translate(0,0) skewX(0deg); }
-  }
-  #stagesScreen.show .stageTitle{
-    animation: stageTitleGlitch 2.6s ease-out 1;
-  }
-  @keyframes stageTitleGlitch{
-    0%, 40%, 100% { text-shadow:0 0 24px #22ff66,0 0 60px #0aff44,4px 4px 0 #000; }
-    6%  { text-shadow:-5px 0 #ff0044, 5px 0 #00eaff, 0 0 24px #22ff66; }
-    14% { text-shadow:5px 0 #ff0044, -5px 0 #00eaff, 0 0 24px #22ff66; }
-    22% { text-shadow:-3px 0 #ff0044, 3px 0 #00eaff, 0 0 30px #0aff44; }
-    30% { text-shadow:3px 0 #ff0044, -3px 0 #00eaff, 0 0 24px #22ff66; }
-  }
-  .stageLabel{
-    color:#ff3333;font-size:24px;font-weight:bold;letter-spacing:10px;
-    text-shadow:0 0 14px #ff0000;margin-bottom:8px;
-  }
-  .stageTitle{
-    color:#39ff6e;font-size:100px;font-weight:900;letter-spacing:14px;
-    text-shadow:0 0 24px #22ff66,0 0 60px #0aff44,4px 4px 0 #000;
-    margin:0 0 20px;
-  }
-  .stageSubtitle{
-    color:#dfffe6;font-size:20px;font-style:italic;max-width:640px;
-    text-align:center;line-height:1.6;margin-bottom:36px;text-shadow:2px 2px 4px #000;
-  }
 
   /* ---------- pause / leave-confirm screen ---------- */
   #pauseScreen{
@@ -267,12 +243,20 @@
   <div class="settingRow"><span><span style="color:#fff">SFX VOLUME</span></span><input id="sfxVolume" type="range" min="0" max="100"></div>
   <button id="closeSettingsBtn" class="bigBtn">BACK</button>
 </div></div>
-<div id="stageSelect"><h1>STAGES</h1><div id="stage1Card" class="stageCard">STAGE 1<br><small>MATRIX — REPLAYABLE</small></div><div id="stage2Card" class="stageCard">STAGE 2<br><small>UNLOCKED AFTER STAGE 1</small></div><button id="stageBackBtn" class="bigBtn">BACK</button></div>
-<div id="stagesScreen">
-  <div class="stageLabel">STAGE 1</div>
-  <div class="stageTitle">MATRIX</div>
-  <div class="stageSubtitle" id="stageSubtitle"></div>
-  <button id="enterBtn" class="bigBtn">ENTER</button>
+<div id="stageSelect">
+  <h1>STAGES</h1>
+  <div id="stageGrid">
+    <div id="stage1Card" class="stageCard">
+      <canvas class="stageThumb" id="thumb1" width="300" height="160"></canvas>
+      <div class="stageCardTitle">STARTING TO BELIEVE</div>
+    </div>
+    <div id="stage2Card" class="stageCard locked">
+      <canvas class="stageThumb" id="thumb2" width="300" height="160"></canvas>
+      <div class="stageCardTitle">ME</div>
+      <div class="lockOverlay"><span class="lockIcon">🔒</span>COMPLETE<br>STARTING TO BELIEVE<br>TO UNLOCK</div>
+    </div>
+  </div>
+  <button id="stageBackBtn" class="bigBtn" style="margin-top:32px;">BACK</button>
 </div>
 <div id="pauseScreen">
   <div id="pauseTitle">LEAVE THE SIMULATION?</div>
@@ -492,14 +476,6 @@ let stage1Finished = false;
 let stageTransitionTimer = 0;
 let stageMutationTriggered = false;
 
-const STAGE_LINES = [
-  "Wake up, Cube.",
-  "This simulation was built to break you. It will not.",
-  "Every wall you see here is a lie wearing the shape of a rule.",
-  "Tonight, we tear it down floor by floor.",
-  "Cube, you will not escape this simulation — you will end it."
-];
-
 // ---------- BOSS (MUTATED GREEN) ----------
 let nextBossThreshold = 100;  // kill count needed for the NEXT mutation - increments by 50 each time, so the boss keeps coming back (arasıra çıksın)
 let bossEnemyRef = null;     // reference to the enemy object that is/was the boss
@@ -569,18 +545,15 @@ function backToMainMenu(){
 
   document.getElementById('ui').style.display = 'none';
   document.getElementById('deathScreen').style.display = 'none';
-
-  const stagesEl = document.getElementById('stagesScreen');
-  stagesEl.classList.remove('show');
-  stagesEl.classList.add('hidden');
-
-  const menuEl = document.getElementById('mainMenu');
-  menuEl.classList.remove('fade-out','hidden');
+  stageSelect.classList.remove('show');
 
   playingReal = false;
   inStages = false;
   inMenu = true;
   autoPilot = true;
+
+  const menuEl = document.getElementById('mainMenu');
+  menuEl.classList.remove('fade-out','hidden');
 
   restartGame();
 }
@@ -1915,17 +1888,143 @@ sfxVolumeInput.oninput=()=>{masterSfxVolume=sfxVolumeInput.value/100;localStorag
 
 // ---------- STAGE SELECT ----------
 const stageSelect=document.getElementById('stageSelect');
-function openStageSelect(){ document.getElementById('mainMenu').classList.add('hidden'); stageSelect.classList.add('show'); }
-function startSelectedStage(n){
-  currentStage=n; stageSelect.classList.remove('show'); inStages=true;
-  const st=document.getElementById('stagesScreen'); st.classList.remove('hidden'); void st.offsetWidth; st.classList.add('show');
-  st.querySelector('.stageLabel').textContent='STAGE '+n;
-  st.querySelector('.stageTitle').textContent=n===1?'MATRIX':'AFTERMATH';
-  document.getElementById('stageSubtitle').innerHTML=n===1?STAGE_LINES.join('<br>'):'The simulation broke. Now survive what escaped it.';
+
+// Stage 2 is only ever allowed once Stage 1 has actually been finished.
+// This is checked both when drawing the lock UI (so the card visibly
+// looks locked/disabled and can't be clicked) AND again inside launchStage
+// itself as a hard safety net, so there is no path - card click, stray
+// call, anything - that can start Stage 2 early.
+function isStage2Unlocked(){
+  return !!localStorage.getItem('kt_stage1_complete');
 }
-document.getElementById('stage1Card').onclick=()=>startSelectedStage(1);
-document.getElementById('stage2Card').onclick=()=>{ if(localStorage.getItem('kt_stage1_complete')) startSelectedStage(2); };
+function updateStageLockUI(){
+  document.getElementById('stage2Card').classList.toggle('locked', !isStage2Unlocked());
+}
+
+function openStageSelect(){
+  updateStageLockUI();
+  document.getElementById('mainMenu').classList.add('hidden');
+  stageSelect.classList.add('show');
+}
+
+// Clicking a stage card jumps straight into that run - no title/ENTER
+// screen in between.
+function launchStage(n){
+  if(n===2 && !isStage2Unlocked()) return; // locked - refuse, just in case
+
+  currentStage = n;
+  stageSelect.classList.remove('show');
+
+  inStages = false;
+  inMenu = false;
+  autoPilot = false;
+  playingReal = true;
+  document.getElementById('ui').style.display = '';
+
+  const mapImg = currentMapImg();
+  if(mapImg.loaded) fitWorldToMapImg(mapImg);
+
+  restartGame();
+  playWakeUpEffect();
+  tryPlayMusic(currentGameMusic(), () => gameStarted && playingReal);
+}
+document.getElementById('stage1Card').onclick=()=>launchStage(1);
+document.getElementById('stage2Card').onclick=()=>launchStage(2);
 document.getElementById('stageBackBtn').onclick=()=>{stageSelect.classList.remove('show');document.getElementById('mainMenu').classList.remove('hidden');};
+
+// ---------- STAGE THUMBNAIL PREVIEWS ----------
+// Each stage card shows a small live canvas with its own map and a tiny
+// bot-controlled dot fighting a couple of enemies, mirroring the "bot
+// plays behind the scenes" feel of the main menu - just shrunk down.
+function makeThumbState(mapImg, kinds){
+  return {
+    mapImg,
+    t: Math.random()*10,
+    player: { x: 150, y: 80, ang: 0 },
+    enemies: kinds.map((type,i) => ({
+      type,
+      x: 40 + i*70 + Math.random()*20,
+      y: 30 + (i%2)*100 + Math.random()*20,
+    })),
+  };
+}
+const thumb1Canvas = document.getElementById('thumb1');
+const thumb2Canvas = document.getElementById('thumb2');
+const thumb1Ctx = thumb1Canvas.getContext('2d');
+const thumb2Ctx = thumb2Canvas.getContext('2d');
+const thumbState1 = makeThumbState(IMG.map,  ['green','glob','green']);
+const thumbState2 = makeThumbState(IMG.map2, ['glob','green','glob']);
+
+function drawThumb(tctx, tcanvas, state, dt){
+  state.t += dt;
+  const w = tcanvas.width, h = tcanvas.height;
+  tctx.clearRect(0,0,w,h);
+
+  if(state.mapImg.loaded){
+    tctx.drawImage(state.mapImg, 0, 0, w, h);
+  } else {
+    tctx.fillStyle = '#141d0f';
+    tctx.fillRect(0,0,w,h);
+  }
+
+  // player wanders a slow lissajous path around the thumbnail
+  const targetX = w/2 + Math.cos(state.t*0.4)*w*0.34;
+  const targetY = h/2 + Math.sin(state.t*0.55)*h*0.32;
+  const dx = targetX-state.player.x, dy = targetY-state.player.y;
+  const d = Math.hypot(dx,dy) || 1;
+  state.player.ang = Math.atan2(dy,dx);
+  state.player.x += (dx/d)*36*dt;
+  state.player.y += (dy/d)*36*dt;
+
+  // enemies loosely give chase, like the real bot fight
+  for(const e of state.enemies){
+    const edx = state.player.x-e.x, edy = state.player.y-e.y;
+    const ed = Math.hypot(edx,edy) || 1;
+    if(ed > 30){ e.x += (edx/ed)*20*dt; e.y += (edy/ed)*20*dt; }
+    e.x = clamp(e.x, 8, w-8); e.y = clamp(e.y, 8, h-8);
+
+    const eImg = e.type==='green' ? IMG.green : IMG.glob;
+    tctx.save();
+    tctx.translate(e.x, e.y);
+    if(eImg.loaded){ tctx.drawImage(eImg, -9, -9, 18, 18); }
+    else { tctx.fillStyle = e.type==='green' ? '#2ecc40' : '#e6c419'; tctx.beginPath(); tctx.arc(0,0,6,0,Math.PI*2); tctx.fill(); }
+    tctx.restore();
+  }
+
+  state.player.x = clamp(state.player.x, 8, w-8);
+  state.player.y = clamp(state.player.y, 8, h-8);
+
+  // little muzzle flash so it visibly reads as "shooting", not just walking
+  if(Math.floor(state.t*3)%3===0){
+    tctx.save();
+    tctx.strokeStyle = 'rgba(255,224,90,.6)';
+    tctx.lineWidth = 2;
+    tctx.beginPath();
+    tctx.moveTo(state.player.x, state.player.y);
+    tctx.lineTo(state.player.x+Math.cos(state.player.ang)*22, state.player.y+Math.sin(state.player.ang)*22);
+    tctx.stroke();
+    tctx.restore();
+  }
+
+  const pImg = IMG.nice;
+  tctx.save();
+  tctx.translate(state.player.x, state.player.y);
+  if(pImg.loaded){ tctx.drawImage(pImg, -10, -10, 20, 20); }
+  else { tctx.fillStyle = '#39ff6e'; tctx.beginPath(); tctx.arc(0,0,7,0,Math.PI*2); tctx.fill(); }
+  tctx.restore();
+}
+
+let thumbLastTime = performance.now();
+function thumbLoop(now){
+  const dt = Math.min(0.05, (now-thumbLastTime)/1000);
+  thumbLastTime = now;
+  if(stageSelect.classList.contains('show')){
+    drawThumb(thumb1Ctx, thumb1Canvas, thumbState1, dt);
+    drawThumb(thumb2Ctx, thumb2Canvas, thumbState2, dt);
+  }
+  requestAnimationFrame(thumbLoop);
+}
+requestAnimationFrame(thumbLoop);
 
 // ---------- MUSIC ----------
 // musics/elevator.mp3 loops in the background while the main menu is up.
@@ -1995,13 +2094,14 @@ function playWakeUpEffect(){
   requestAnimationFrame(() => { wakeOverlay.style.opacity = '0'; });
 }
 
-// ---------- MAIN MENU -> STAGES -> REAL GAME WIRING ----------
+// ---------- MAIN MENU -> STAGE SELECT -> REAL GAME WIRING ----------
 // 1) Main menu: bot plays behind the PLAY button, elevator music.
-// 2) Hitting PLAY fades the menu out and brings up the STAGE 1 / MATRIX
-//    intro screen - the bot KEEPS playing behind it. No game.mp3 yet.
-// 3) Hitting ENTER on that screen fades it out, plays the wake-up-from-black
-//    effect, starts game.mp3, and hands control to the player for real
-//    (HUD appears, fresh stats).
+// 2) Hitting PLAY fades the menu out and shows the stage grid - the bot
+//    KEEPS playing behind it, each card has its own live mini-preview.
+// 3) Clicking an unlocked stage card immediately launches that run: fades
+//    the grid out, plays the wake-up-from-black effect, starts the
+//    stage's music, and hands control to the player for real (HUD
+//    appears, fresh stats). No extra title/ENTER screen in between.
 document.getElementById('ui').style.display = 'none';
 
 // Flip the flag (and kill elevator) on pointerdown, which fires on the
@@ -2019,25 +2119,6 @@ document.getElementById('playBtn').addEventListener('click', () => {
   openStageSelect();
 });
 
-document.getElementById('enterBtn').addEventListener('click', () => {
-  const stagesEl = document.getElementById('stagesScreen');
-  stagesEl.classList.remove('show');
-
-  setTimeout(() => {
-    stagesEl.classList.add('hidden');
-    inStages = false;
-    inMenu = false;
-    autoPilot = false;
-    playingReal = true;
-    document.getElementById('ui').style.display = '';
-    const mapImg = currentMapImg();
-    if(mapImg.loaded) fitWorldToMapImg(mapImg);
-    restartGame();
-    playWakeUpEffect();
-    tryPlayMusic(currentGameMusic(), () => gameStarted && playingReal);
-  }, 550);
-});
-
 // ---------- GAME LOOP ----------
 function loop(now){
   const dt = Math.min(0.033, (now - lastTime)/1000);
@@ -2047,6 +2128,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+
 </script>
 </body>
 </html>
