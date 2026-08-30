@@ -495,7 +495,7 @@ function dist(ax,ay,bx,by){ return Math.hypot(ax-bx, ay-by); }
 const keys = {};
 let mouseScreen = { x: 0, y: 0 };
 let mouseDown = false;
-let weapon = null; // Silah alınmadıysa null
+let weapon = 'gun';
 let parryCooldown = 0;
 let parryPulseTimer = 0;
 let parryPulse = { x: 0, y: 0, active: false };
@@ -576,8 +576,8 @@ let cubeClonesSpawned = false;
 window.addEventListener('keydown', e => {
   if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
   if(e.key === 'Escape'){ togglePause(); return; }
-  if(e.key === '1' && weapon !== null) weapon='gun';
-  if(e.key === '2' && weapon !== null) weapon='shotgun';
+  if(e.key === '1') weapon='gun';
+  if(e.key === '2') weapon='shotgun';
   keys[e.key.toLowerCase()] = true;
   if(e.key.toLowerCase() === 'q') tryDash();
   if(e.key.toLowerCase() === 'f' && !e.repeat) tryParry();
@@ -927,7 +927,7 @@ function updateAutoPilot(dt){
 
   // shooting
   botFireTimer -= dt;
-  if(target && botFireTimer <= 0 && weapon !== null){
+  if(target && botFireTimer <= 0){
     shoot();
     botFireTimer = weapon==='shotgun' ? 0.86 : 0.35;
   }
@@ -941,7 +941,7 @@ function updateAutoPilot(dt){
 
   // occasionally swap weapons just to show both off
   botWeaponTimer -= dt;
-  if(botWeaponTimer <= 0 && weapon !== null){
+  if(botWeaponTimer <= 0){
     weapon = weapon === 'gun' ? 'shotgun' : 'gun';
     botWeaponTimer = 4 + Math.random()*4;
   }
@@ -967,7 +967,6 @@ function spawnWeaponPickup(type, x, y){
 }
 function shoot(){
   if(player.fireCooldown > 0 || !player.alive) return;
-  if(!weapon) return; // Silah yoksa ateş edemez
   const mw = mouseWorld();
   const ang = Math.atan2(mw.y - player.y, mw.x - player.x);
   const muzzleDist = player.radius + 18;
@@ -2495,10 +2494,8 @@ function drawPlayer(){
   const gx = sx + Math.cos(aimAngle) * gunDist;
   const gy = sy + Math.sin(aimAngle) * gunDist;
   const gunAngle = aimAngle + GUN_ART_OFFSET;
-  if(weapon !== null){
-    const weaponImg = weapon==='shotgun' ? IMG.shotgun : IMG.gun;
-    drawRotatedImage(weaponImg, gx, gy, weapon==='shotgun'?58:46, weapon==='shotgun'?58:46, gunAngle, '#888888', weapon==='shotgun'?'SHOTGUN':'GUN');
-  }
+  const weaponImg = weapon==='shotgun' ? IMG.shotgun : IMG.gun;
+  drawRotatedImage(weaponImg, gx, gy, weapon==='shotgun'?58:46, weapon==='shotgun'?58:46, gunAngle, '#888888', weapon==='shotgun'?'SHOTGUN':'GUN');
 }
 
 function drawKnightEnemy(e, sx, sy){
@@ -2693,7 +2690,7 @@ function restartGame(){
   lastParriedOrbPos = null; parryPulse.active = false;
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
-  weapon = null; // Her stage başlangıcında silah sıfırlanır
+  weapon = 'gun'; // every level starts back on weapon 1
   weaponPickups = [];
   stageWeaponCollected = false;
   stage2WeaponCollected = false;
@@ -2790,7 +2787,6 @@ function launchStage(n){
 
   // Stage 1: Silah pickup spawn et, enemy spawnlama engelle
   if(n===1){
-    weapon = null; // Silahı sıfırla
     weaponPickups = [];
     stageWeaponCollected = false;
     // Oyuncunun önüne silah koy
@@ -2798,7 +2794,6 @@ function launchStage(n){
   }
   // Stage 2: Shotgun pickup spawn et
   if(n===2){
-    weapon = null; // Silahı sıfırla
     weaponPickups = [];
     stage2WeaponCollected = false;
     // Oyuncunun önüne shotgun koy
