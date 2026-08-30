@@ -1503,27 +1503,47 @@ const musicGame = new Audio('musics/game.mp3');
 musicGame.loop = true;
 musicGame.volume = 0.55;
 
+// Once true, elevator.mp3 must never play again (menu-only track).
+let gameStarted = false;
+
 // Browsers block audio.play() until the user has interacted with the page.
 // Try immediately; if that's blocked, retry on the first click/keypress.
-function tryPlayMusic(audio){
+// `guard` (optional) is re-checked right before the retry actually plays,
+// so a track can be cancelled even if its "unlock" listener fires late.
+function tryPlayMusic(audio, guard){
   const p = audio.play();
   if(p && p.catch){
     p.catch(() => {
-      const resume = () => { audio.play().catch(()=>{}); };
+      const resume = () => {
+        if(guard && !guard()) return;
+        audio.play().catch(()=>{});
+      };
       window.addEventListener('pointerdown', resume, {once:true});
       window.addEventListener('keydown', resume, {once:true});
     });
   }
 }
 
-tryPlayMusic(musicElevator); // starts as soon as the page loads (menu music)
+tryPlayMusic(musicElevator, () => !gameStarted); // starts as soon as the page loads (menu music)
 
 // ---------- MAIN MENU WIRING ----------
 // While inMenu is true the bot plays in the background and the normal HUD
 // stays hidden - only the PLAY button shows. Clicking it fades the menu
 // out, then throws the player straight into a fresh, player-controlled game.
 document.getElementById('ui').style.display = 'none';
+
+// Flip the flag (and kill elevator) on pointerdown, which fires on the
+// PLAY button itself BEFORE it bubbles up to window - this beats the
+// fallback "resume" listener above to the punch, so there's no race
+// where elevator sneaks back in for the same click that starts the game.
+document.getElementById('playBtn').addEventListener('pointerdown', () => {
+  gameStarted = true;
+  musicElevator.pause();
+  musicElevator.currentTime = 0;
+});
+
 document.getElementById('playBtn').addEventListener('click', () => {
+  gameStarted = true;
   const menuEl = document.getElementById('mainMenu');
   menuEl.classList.add('fade-out');
 
