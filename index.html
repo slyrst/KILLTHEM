@@ -208,6 +208,11 @@
     text-shadow:0 0 16px rgba(255,255,255,.5);text-align:center;
   }
   #pauseBtnRow{ display:flex; gap:24px; }
+
+/* Settings readability */
+#settingsScreen, #settingsScreen *{color:#fff;}
+#settingsScreen label{color:#fff !important;}
+#settingsScreen input[type="range"]{accent-color:#fff;}
 </style>
 </head>
 <body>
@@ -249,9 +254,9 @@
 </div>
 <div id="settingsScreen"><div id="settingsPanel">
   <h2>SETTINGS</h2>
-  <div class="settingRow"><span>PARRY VOLUME</span><input id="parryVolume" type="range" min="0" max="100"></div>
-  <div class="settingRow"><span>MUSIC VOLUME</span><input id="musicVolume" type="range" min="0" max="100"></div>
-  <div class="settingRow"><span>SFX VOLUME</span><input id="sfxVolume" type="range" min="0" max="100"></div>
+  <div class="settingRow"><span><span style="color:#fff">PARRY VOLUME</span></span><input id="parryVolume" type="range" min="0" max="100"></div>
+  <div class="settingRow"><span><span style="color:#fff">MUSIC VOLUME</span></span><input id="musicVolume" type="range" min="0" max="100"></div>
+  <div class="settingRow"><span><span style="color:#fff">SFX VOLUME</span></span><input id="sfxVolume" type="range" min="0" max="100"></div>
   <button id="closeSettingsBtn" class="bigBtn">BACK</button>
 </div></div>
 <div id="stageSelect"><h1>STAGES</h1><div id="stage1Card" class="stageCard">STAGE 1<br><small>MATRIX — REPLAYABLE</small></div><div id="stage2Card" class="stageCard">STAGE 2<br><small>UNLOCKED AFTER STAGE 1</small></div><button id="stageBackBtn" class="bigBtn">BACK</button></div>
@@ -713,13 +718,18 @@ function updateAutoPilot(dt){
     if(d < bestD){ bestD = d; target = e; }
   }
 
-  // smoothly turn towards the target instead of snapping the aim straight
-  // to it every frame - reads a lot less robotic
+  // Mouse-like smooth aiming: smoothly rotate toward the target instead of snapping.
+  // The exponential blend keeps it smooth at every FPS while still eventually becoming accurate.
   if(target){
-    // Menu bot is intentionally exact: its aim is the real target angle, not a delayed interpolation.
-    botAimAngle = Math.atan2(target.y - player.y, target.x - player.x);
+    const desiredAngle = Math.atan2(target.y - player.y, target.x - player.x);
+    const angleDiff = Math.atan2(
+      Math.sin(desiredAngle - botAimAngle),
+      Math.cos(desiredAngle - botAimAngle)
+    );
+    const aimSmooth = 1 - Math.exp(-4.2 * dt);
+    botAimAngle += angleDiff * aimSmooth;
   } else {
-    botAimAngle += dt * 0.5;
+    botAimAngle += dt * 0.32;
   }
 
   // fake the mouse so mouseWorld()/shoot()/drawPlayer() all just work
