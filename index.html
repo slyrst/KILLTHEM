@@ -458,17 +458,17 @@ function fitWorldToMapImg(img){
   player.x = WORLD.w / 2;
   player.y = WORLD.h / 2;
 }
-// Stage 1 uses Map.png, Stage 2 uses map2.png.
+// ME (Stage 1) uses map2.png. Boss Stages (Stage 2) uses Map.png.
 function currentMapImg(){
-  return currentStage === 2 ? IMG.map2 : IMG.map;
+  return currentStage === 1 ? IMG.map2 : IMG.map;
 }
 IMG.map.onload = () => {
   IMG.map.loaded = true;
-  if(currentStage === 1) fitWorldToMapImg(IMG.map);
+  if(currentStage === 2) fitWorldToMapImg(IMG.map);
 };
 IMG.map2.onload = () => {
   IMG.map2.loaded = true;
-  if(currentStage === 2) fitWorldToMapImg(IMG.map2);
+  if(currentStage === 1) fitWorldToMapImg(IMG.map2);
 };
 
 const camera = { x: 0, y: 0 };
@@ -980,7 +980,7 @@ function spawnEnemy(){
   x = clamp(x, 20, WORLD.w-20); y = clamp(y, 20, WORLD.h-20);
 
   let type;
-  if(currentStage === 2){
+  if(currentStage === 1){
     const r = Math.random();
     type = r < 0.4 ? 'green' : (r < 0.7 ? 'glob' : 'knight');
   } else {
@@ -1007,7 +1007,7 @@ function spawnEnemy(){
     // shots back at us with its sword before hopping away again.
     // Stage 2 bazen güçlendirilmiş Knight spawn eder: daha büyük, daha hızlı,
     // daha fazla hasarlı ve daha büyük kılıçlı.
-    const buffed = currentStage === 2 && Math.random() < 0.18;
+    const buffed = currentStage === 1 && Math.random() < 0.18;
     const hp = (buffed ? 180 : 90) * DIFF.enemyHpMult;
     const radius = buffed ? 36 : 26;
     enemies.push({
@@ -1734,7 +1734,7 @@ function triggerCubeV2(encounterStage=currentStage){
 function spawnCubeClone(side){
   if(!cubeV2Ref || !player.alive) return;
   const base=cubeV2Ref;
-  const c={...base, isClone:true, bossName:'', hp:base.maxHp*0.34, maxHp:base.maxHp*0.34, dmg:18, speed:225,
+  const c={...base, isClone:true, bossName:'CUBE V2', hp:base.maxHp*0.5, maxHp:base.maxHp*0.5, dmg:18, speed:225,
     x:clamp(player.x+side*260,player.radius,WORLD.w-player.radius), y:clamp(player.y-120,player.radius,WORLD.h-player.radius),
     weaponTimer:1.4+Math.random(), gunFireTimer:.65+Math.random()*.35, dashTimer:1.6+Math.random(), parryTimer:9999, parryActive:false, tauntTimer:9999};
   enemies.push(c); cubeV2Clones.push(c);
@@ -2112,7 +2112,7 @@ function render(){
     }
     ctx.fillStyle='rgba(255,255,255,.35)';
     ctx.font='bold 13px Arial';
-    const missingName = currentStage===2 ? 'images/map2.png' : 'images/Map.png';
+    const missingName = currentStage===1 ? 'images/map2.png' : 'images/Map.png';
     ctx.fillText(missingName+' not found - showing placeholder ground', 16, canvas.height-16);
   }
 
@@ -2504,23 +2504,19 @@ function updateUI(){
 
   const bossWrapEl = document.getElementById('bossBarWrap');
   const multiBossEl = document.getElementById('multiBossBars');
-  if(cubeV2BossBars.length && stage2BossTriggered && (bossActive || cubeV2BossBars.some(e=>e && e.hp>0) || cubeCloneSpawnQueue.length)){
-    bossWrapEl.classList.remove('show');
-    multiBossEl.classList.add('show');
-    const trio=cubeV2BossBars;
-    for(let i=0;i<3;i++){
-      const e=trio[i];
-      document.getElementById('cubeBossName'+i).textContent='';
-      document.getElementById('cubeBossBar'+i).style.width=e?Math.max(0,100*e.hp/e.maxHp)+'%':'0%';
-    }
+  // Fake Cubes never get their own UI health bars. The only visible boss bar
+  // belongs to the real Cube V2, even after the clones join the fight.
+  multiBossEl.classList.remove('show');
+  if(stage2BossTriggered && cubeV2Ref && cubeV2Ref.hp>0){
+    bossWrapEl.classList.add('show');
+    document.getElementById('bossName').textContent = 'CUBE V2';
+    document.getElementById('bossBar').style.width = Math.max(0, 100*cubeV2Ref.hp/cubeV2Ref.maxHp)+'%';
   } else if(bossActive && bossEnemyRef){
-    multiBossEl.classList.remove('show');
     bossWrapEl.classList.add('show');
     document.getElementById('bossName').textContent = bossEnemyRef.bossName || 'MUTATED GREEN';
     document.getElementById('bossBar').style.width = Math.max(0, 100*bossEnemyRef.hp/bossEnemyRef.maxHp)+'%';
   } else {
     bossWrapEl.classList.remove('show');
-    multiBossEl.classList.remove('show');
   }
 
   const bannerEl = document.getElementById('banner');
@@ -2568,6 +2564,14 @@ function restartGame(){
   botMoveX = 0; botMoveY = 0;
   document.getElementById('deathScreen').style.display = 'none';
   lastTime = performance.now();
+
+  // TRY AGAIN on the dedicated Cube V2 boss stage must restart the full
+  // encounter, including the real Cube and the later-arriving clones.
+  if(currentStage===2){
+    setTimeout(() => {
+      if(player.alive && currentStage===2 && !stage2BossTriggered) triggerCubeV2(2);
+    }, 0);
+  }
 }
 
 // ---------- SETTINGS ----------
@@ -2626,8 +2630,8 @@ const thumb1Canvas = document.getElementById('thumb1');
 const thumb2Canvas = document.getElementById('bossThumbCube');
 const thumb1Ctx = thumb1Canvas.getContext('2d');
 const thumb2Ctx = thumb2Canvas.getContext('2d');
-const thumbState1 = makeThumbState(IMG.map,  ['green','glob','green']);
-const thumbState2 = makeThumbState(IMG.map2, ['glob','green','glob']);
+const thumbState1 = makeThumbState(IMG.map2, ['cubev2','knight','cubev2']);
+const thumbState2 = makeThumbState(IMG.map, ['cubev2','cubev2']);
 
 function drawThumb(tctx, tcanvas, state, dt){
   state.t += dt;
@@ -2657,10 +2661,11 @@ function drawThumb(tctx, tcanvas, state, dt){
     if(ed > 30){ e.x += (edx/ed)*20*dt; e.y += (edy/ed)*20*dt; }
     e.x = clamp(e.x, 8, w-8); e.y = clamp(e.y, 8, h-8);
 
-    const eImg = e.type==='green' ? IMG.green : IMG.glob;
+    const eImg = e.type==='green' ? IMG.green : (e.type==='knight' ? IMG.knight : (e.type==='cubev2' ? null : IMG.glob));
     tctx.save();
     tctx.translate(e.x, e.y);
-    if(eImg.loaded){ tctx.drawImage(eImg, -9, -9, 18, 18); }
+    if(eImg && eImg.loaded){ tctx.drawImage(eImg, -9, -9, 18, 18); }
+    else if(e.type==='cubev2'){ tctx.fillStyle='#d8d8e6'; tctx.fillRect(-9,-9,18,18); tctx.strokeStyle='#ff3333'; tctx.lineWidth=2; tctx.strokeRect(-9,-9,18,18); }
     else { tctx.fillStyle = e.type==='green' ? '#2ecc40' : '#e6c419'; tctx.beginPath(); tctx.arc(0,0,6,0,Math.PI*2); tctx.fill(); }
     tctx.restore();
   }
@@ -2692,7 +2697,7 @@ let thumbLastTime = performance.now();
 function thumbLoop(now){
   const dt = Math.min(0.05, (now-thumbLastTime)/1000);
   thumbLastTime = now;
-  if(stageSelect.classList.contains('show')){
+  if(stageSelect.classList.contains('show') || bossStageSelect.classList.contains('show')){
     drawThumb(thumb1Ctx, thumb1Canvas, thumbState1, dt);
     drawThumb(thumb2Ctx, thumb2Canvas, thumbState2, dt);
   }
@@ -2818,7 +2823,7 @@ function updateCubeDialogue(dt){
 
 // Returns whichever gameplay track belongs to the stage currently being played.
 function currentGameMusic(){
-  return currentStage === 2 ? musicGame2 : musicGame;
+  return currentStage === 1 ? musicGame2 : musicGame;
 }
 // Stops stage 1's track and starts stage 2's, used on the automatic
 // stage1 -> stage2 transition mid-run.
