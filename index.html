@@ -63,6 +63,34 @@
     background:linear-gradient(90deg,#8a0000,#ff1414 55%,#ff5a3d);
     transition:width .15s;
   }
+  #mainMenu{
+    position:fixed;inset:0;z-index:60;
+    display:flex;align-items:center;justify-content:center;
+    background:transparent;pointer-events:none;
+    opacity:1;transition:opacity .6s ease;
+  }
+  #mainMenu.fade-out{ opacity:0; }
+  #mainMenu.hidden{ display:none; }
+  #playBtn{
+    pointer-events:auto;
+    background:transparent;
+    color:#fff;
+    border:3px solid #fff;
+    font-family:'Trebuchet MS',Arial,sans-serif;
+    font-size:30px;
+    font-weight:bold;
+    letter-spacing:8px;
+    padding:20px 66px;
+    cursor:pointer;
+    text-shadow:0 0 10px rgba(255,255,255,.6);
+    box-shadow:0 0 0 rgba(255,255,255,0);
+    transition:background .2s, box-shadow .2s, transform .15s;
+  }
+  #playBtn:hover{
+    background:rgba(255,255,255,.08);
+    box-shadow:0 0 22px rgba(255,255,255,.35);
+  }
+  #playBtn:active{ transform:scale(0.96); }
 </style>
 </head>
 <body>
@@ -90,6 +118,9 @@
   <h1>YOU DIED</h1>
   <p id="finalStats"></p>
   <button onclick="restartGame()">TRY AGAIN</button>
+</div>
+<div id="mainMenu">
+  <button id="playBtn">PLAY</button>
 </div>
 
 <script>
@@ -217,6 +248,16 @@ let lastParriedOrbPos = null;
 let explosions = [];
 let deathPieces = [];
 let corpsePieces = [];
+
+// ---------- MAIN MENU / BACKGROUND DEMO BOT ----------
+let inMenu = true;     // true until the player hits PLAY
+let autoPilot = true;  // true while an AI bot is driving the player as a menu background
+let botAimAngle = 0;
+let botFireTimer = 0.4;
+let botDashTimer = 1.6;
+let botWeaponTimer = 5;
+let botStrafeDir = 1;
+let botStrafeTimer = 2;
 
 // ---------- BOSS (MUTATED GREEN) ----------
 let bossTriggered = false;   // true once the 50th-kill mutation has fired
@@ -384,6 +425,73 @@ function playerPortrait(){
   return IMG.nice;
 }
 
+// Drives the player like a simple bot while the main menu is showing, so
+// there's live gameplay happening behind the PLAY button. Returns the
+// normalized movement vector for this frame; also fakes the mouse aim
+// (via mouseScreen, which mouseWorld()/shoot()/drawPlayer() already read)
+// and fires/dashes/switches weapons on its own timers.
+function updateAutoPilot(dt){
+  // pick the nearest enemy to fight
+  let target = null, bestD = Infinity;
+  for(const e of enemies){
+    const d = dist(player.x, player.y, e.x, e.y);
+    if(d < bestD){ bestD = d; target = e; }
+  }
+
+  if(target){
+    botAimAngle = Math.atan2(target.y - player.y, target.x - player.x);
+  } else {
+    botAimAngle += dt * 0.5; // idle look-around when nothing's alive yet
+  }
+
+  // fake the mouse so mouseWorld()/shoot()/drawPlayer() all just work
+  mouseScreen.x = canvas.width/2 + Math.cos(botAimAngle) * 140;
+  mouseScreen.y = canvas.height/2 + Math.sin(botAimAngle) * 140;
+
+  // movement: hold a mid-range distance, strafing, back off if something
+  // gets too close, otherwise close the distance
+  let mv = { x:0, y:0 };
+  botStrafeTimer -= dt;
+  if(botStrafeTimer <= 0){ botStrafeDir *= -1; botStrafeTimer = 1.2 + Math.random()*1.4; }
+
+  if(target){
+    if(bestD < 160){
+      mv.x = -Math.cos(botAimAngle); mv.y = -Math.sin(botAimAngle);
+    } else if(bestD > 380){
+      mv.x = Math.cos(botAimAngle); mv.y = Math.sin(botAimAngle);
+    } else {
+      mv.x = Math.cos(botAimAngle + Math.PI/2) * botStrafeDir;
+      mv.y = Math.sin(botAimAngle + Math.PI/2) * botStrafeDir;
+    }
+  } else {
+    mv.x = Math.cos(botAimAngle);
+    mv.y = Math.sin(botAimAngle);
+  }
+
+  // shooting
+  botFireTimer -= dt;
+  if(target && botFireTimer <= 0){
+    shoot();
+    botFireTimer = 0.28 + Math.random()*0.35;
+  }
+
+  // dashing away every so often when things get hairy
+  botDashTimer -= dt;
+  if(botDashTimer <= 0 && target && bestD < 220){
+    tryDash();
+    botDashTimer = 1.4 + Math.random()*1.2;
+  }
+
+  // occasionally swap weapons just to show both off
+  botWeaponTimer -= dt;
+  if(botWeaponTimer <= 0){
+    weapon = weapon === 'gun' ? 'shotgun' : 'gun';
+    botWeaponTimer = 4 + Math.random()*4;
+  }
+
+  return mv;
+}
+
 // ---------- BULLETS (player) ----------
 let bullets = [];
 function shoot(){
@@ -543,7 +651,9 @@ function registerKill(e, exploded){
   // Point-blank kill: if the enemy died almost inside the player (barely
   // touching / overlapping), it's a close-range execution - give some HP
   // back, with a green heal pulse around the player.
-  const closeRange = player.radius + e.radius + 8;
+  // "Yakın" burada iç içe girmiş olmayı değil, gerçekten yakın mesafeden
+  // yapılan bir öldürmeyi ifade ediyor - o yüzden menzil bolca geniş.
+  const closeRange = player.radius + e.radius + 120;
   if(dist(player.x, player.y, e.x, e.y) <= closeRange){
     healPlayer(15);
   }
@@ -632,10 +742,14 @@ function update(dt){
 
   // ----- player movement -----
   let mv = {x:0,y:0};
-  if(keys['w']) mv.y -= 1;
-  if(keys['s']) mv.y += 1;
-  if(keys['a']) mv.x -= 1;
-  if(keys['d']) mv.x += 1;
+  if(autoPilot){
+    mv = updateAutoPilot(dt);
+  } else {
+    if(keys['w']) mv.y -= 1;
+    if(keys['s']) mv.y += 1;
+    if(keys['a']) mv.x -= 1;
+    if(keys['d']) mv.x += 1;
+  }
   if(mv.x !== 0 || mv.y !== 0){
     const len = Math.hypot(mv.x, mv.y);
     mv.x/=len; mv.y/=len;
@@ -966,6 +1080,11 @@ function damagePlayer(amount){
   player.invuln = 0.5;
   if(player.hp <= 0){
     player.hp = 0;
+    if(autoPilot){
+      // background menu demo: just quietly loop, no death screen
+      restartGame();
+      return;
+    }
     player.alive = false;
     spawnDeathPieces();
     showDeathScreen();
@@ -1344,9 +1463,58 @@ function restartGame(){
   screenShake = { timer:0, duration:1, strength:0 };
   bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
   healPulseTimer = 0;
+  botAimAngle = 0; botFireTimer = 0.4; botDashTimer = 1.6; botWeaponTimer = 5; botStrafeDir = 1; botStrafeTimer = 2;
   document.getElementById('deathScreen').style.display = 'none';
   lastTime = performance.now();
 }
+
+// ---------- MUSIC ----------
+// musics/elevator.mp3 loops in the background while the main menu is up,
+// musics/game.mp3 takes over (looping) the moment the player hits PLAY.
+const musicElevator = new Audio('musics/elevator.mp3');
+musicElevator.loop = true;
+musicElevator.volume = 0.55;
+
+const musicGame = new Audio('musics/game.mp3');
+musicGame.loop = true;
+musicGame.volume = 0.55;
+
+// Browsers block audio.play() until the user has interacted with the page.
+// Try immediately; if that's blocked, retry on the first click/keypress.
+function tryPlayMusic(audio){
+  const p = audio.play();
+  if(p && p.catch){
+    p.catch(() => {
+      const resume = () => { audio.play().catch(()=>{}); };
+      window.addEventListener('pointerdown', resume, {once:true});
+      window.addEventListener('keydown', resume, {once:true});
+    });
+  }
+}
+
+tryPlayMusic(musicElevator); // starts as soon as the page loads (menu music)
+
+// ---------- MAIN MENU WIRING ----------
+// While inMenu is true the bot plays in the background and the normal HUD
+// stays hidden - only the PLAY button shows. Clicking it fades the menu
+// out, then throws the player straight into a fresh, player-controlled game.
+document.getElementById('ui').style.display = 'none';
+document.getElementById('playBtn').addEventListener('click', () => {
+  const menuEl = document.getElementById('mainMenu');
+  menuEl.classList.add('fade-out');
+
+  musicElevator.pause();
+  musicElevator.currentTime = 0;
+  tryPlayMusic(musicGame);
+
+  setTimeout(() => {
+    menuEl.classList.add('hidden');
+    inMenu = false;
+    autoPilot = false;
+    document.getElementById('ui').style.display = '';
+    restartGame();
+  }, 620);
+});
 
 // ---------- GAME LOOP ----------
 function loop(now){
