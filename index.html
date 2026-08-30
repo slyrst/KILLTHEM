@@ -1777,6 +1777,7 @@ function triggerCubeV2(){
     divineMusic.volume = musicVolume;
     divineMusic.currentTime = 0;
     tryPlayMusic(divineMusic, () => playingReal && !paused);
+    cubeCloneSpawnTimer = 14; // Klonlar için timer
   } else {
     setTimeout(() => {
       if(cubeV2Ref===e && player.alive && (currentStage===2 || currentStage===3)) startCubeDialogue();
