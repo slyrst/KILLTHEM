@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -63,153 +64,153 @@
     transition:width .15s;
   }
 
-  /* ---------- shared big menu-button style ---------- */
-  .bigBtn{
-    pointer-events:auto;
-    background:transparent;
-    color:#fff;
-    border:3px solid #fff;
-    font-family:'Trebuchet MS',Arial,sans-serif;
-    font-size:26px;
-    font-weight:bold;
-    letter-spacing:6px;
-    padding:16px 50px;
-    cursor:pointer;
-    text-shadow:0 0 10px rgba(255,255,255,.6);
-    box-shadow:0 0 0 rgba(255,255,255,0);
-    transition:background .2s, box-shadow .2s, transform .15s;
-  }
-  .bigBtn:hover{
-    background:rgba(255,255,255,.08);
-    box-shadow:0 0 22px rgba(255,255,255,.35);
-  }
-  .bigBtn:active{ transform:scale(0.96); }
-  .bigBtn.danger{ border-color:#ff4444; color:#ff8888; text-shadow:0 0 10px rgba(255,68,68,.6); }
-  .bigBtn.danger:hover{ background:rgba(255,68,68,.12); box-shadow:0 0 22px rgba(255,68,68,.45); }
+/* ---------- shared big menu-button style ---------- */
+.bigBtn{
+pointer-events;
+background;
+color:#fff;
+border:3px solid #fff;
+font-family:'Trebuchet MS',Arial,sans-serif;
+font-size:26px;
+font-weight;
+letter-spacing:6px;
+padding:16px 50px;
+cursor;
+text-shadow:0 0 10px rgba(255,255,255,.6);
+box-shadow:0 0 0 rgba(255,255,255,0);
+transition .2s, box-shadow .2s, transform .15s;
+}
+.bigBtn{
+background(255,255,255,.08);
+box-shadow:0 0 22px rgba(255,255,255,.35);
+}
+.bigBtn{ transform(0.96); }
+.bigBtn.danger{ border-color:#ff4444; color:#ff8888; text-shadow:0 0 10px rgba(255,68,68,.6); }
+.bigBtn.danger{ background(255,68,68,.12); box-shadow:0 0 22px rgba(255,68,68,.45); }
 
-  #mainMenu{
-    position:fixed;inset:0;z-index:60;
-    pointer-events:none;
-    opacity:1;transition:opacity .6s ease;
-  }
-  #mainMenu.fade-out{ opacity:0; }
-  #mainMenu.hidden{ display:none; }
-  #menuStack{
-    position:absolute; bottom:34px; left:34px;
-    display:flex; flex-direction:column; align-items:flex-start; gap:18px;
-  }
-  #playBtn{ font-size:23px; padding:15px 42px; letter-spacing:6px; }
-  #settingsBtn{font-size:17px;padding:11px 32px;letter-spacing:4px;}
-  #settingsScreen{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.82);pointer-events:auto;}
-  #settingsScreen.show{display:flex;}
-  #settingsPanel{min-width:340px;padding:28px;border:2px solid #fff;background:rgba(10,10,10,.94);box-shadow:0 0 30px rgba(255,255,255,.18);}
-  .settingRow{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:18px 0;font-weight:bold;letter-spacing:2px;}
-  .settingRow input{width:180px;}
-  #stageSelect{
-    position:fixed;inset:0;z-index:65;display:none;
-    flex-direction:column;align-items:flex-start;justify-content:flex-start;
-    background:rgba(0,0,0,.88);pointer-events:auto;
-    padding:48px 56px;overflow:auto;box-sizing:border-box;
-  }
-  #stageSelect.show{display:flex;}
-  #stageSelect h1{color:#fff;letter-spacing:8px;margin:0 0 28px;font-size:28px;}
-  #stageGrid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, 300px);
-    gap:26px;
-    width:100%;
-  }
-  .stageCard{
-    position:relative;width:300px;overflow:hidden;
-    border:2px solid #39ff6e;background:rgba(0,20,8,.7);color:#fff;
-    cursor:pointer;font-weight:bold;letter-spacing:2px;
-    transition:box-shadow .2s, transform .15s;
-  }
-  .stageCard:hover{box-shadow:0 0 25px #39ff6e;transform:translateY(-3px);}
-  .stageThumb{display:block;width:100%;height:160px;background:#0d1509;}
-  .stageCardTitle{padding:14px 12px;text-align:center;font-size:16px;}
-  .lockOverlay{
-    display:none;position:absolute;inset:0;
-    background:rgba(0,0,0,.75);align-items:center;justify-content:center;
-    flex-direction:column;gap:6px;text-align:center;color:#ff5c5c;
-    font-size:13px;letter-spacing:2px;padding:20px;box-sizing:border-box;
-  }
-  .lockOverlay .lockIcon{font-size:26px;}
-  .stageCard.locked{cursor:not-allowed;pointer-events:none;filter:grayscale(.9) brightness(.55);}
-  .stageCard.locked .lockOverlay{display:flex;}
-  .stageCard.locked:hover{box-shadow:none;transform:none;}
+#mainMenu{
+position;inset:0;z-index:60;
+pointer-events;
+opacity:1;transition .6s ease;
+}
+#mainMenu.fade-out{ opacity:0; }
+#mainMenu.hidden{ display; }
+#menuStack{
+position; bottom:34px; left:34px;
+display; flex-direction; align-items; gap:18px;
+}
+#playBtn{ font-size:23px; padding:15px 42px; letter-spacing:6px; }
+#settingsBtn{font-size:17px;padding:11px 32px;letter-spacing:4px;}
+#settingsScreen{position;inset:0;z-index:80;display;align-items;justify-content;background(0,0,0,.82);pointer-events;}
+#settingsScreen.show{display;}
+#settingsPanel{min-width:340px;padding:28px;border:2px solid #fff;background(10,10,10,.94);box-shadow:0 0 30px rgba(255,255,255,.18);}
+.settingRow{display;justify-content;align-items;gap:20px;margin:18px 0;font-weight;letter-spacing:2px;}
+.settingRow input{width:180px;}
+#stageSelect{
+position;inset:0;z-index:65;display;
+flex-direction;align-items;justify-content;
+background(0,0,0,.88);pointer-events;
+padding:48px 56px;overflow;box-sizing;
+}
+#stageSelect.show{display;}
+#stageSelect h1{color:#fff;letter-spacing:8px;margin:0 0 28px;font-size:28px;}
+#stageGrid{
+display;
+grid-template-columns(auto-fill, 300px);
+gap:26px;
+width:100%;
+}
+.stageCard{
+position;width:300px;overflow;
+border:2px solid #39ff6e;background(0,20,8,.7);color:#fff;
+cursor;font-weight;letter-spacing:2px;
+transition .2s, transform .15s;
+}
+.stageCard{box-shadow:0 0 25px #39ff6e;transform(-3px);}
+.stageThumb{display;width:100%;height:160px;background:#0d1509;}
+.stageCardTitle{padding:14px 12px;text-align;font-size:16px;}
+.lockOverlay{
+display;position;inset:0;
+background(0,0,0,.75);align-items;justify-content;
+flex-direction;gap:6px;text-align;color:#ff5c5c;
+font-size:13px;letter-spacing:2px;padding:20px;box-sizing;
+}
+.lockOverlay .lockIcon{font-size:26px;}
+.stageCard.locked{cursor;pointer-events;filter(.9) brightness(.55);}
+.stageCard.locked .lockOverlay{display;}
+.stageCard.locked{box-shadow;transform;}
 
-  #diffCorner{
-    display:flex; flex-direction:column; align-items:flex-start; gap:10px;
-    pointer-events:auto;
-  }
-  #diffToggleBtn{
-    background:rgba(0,0,0,.35);
-    font-family:'Trebuchet MS',Arial,sans-serif;
-    font-size:14px; font-weight:bold; letter-spacing:2px;
-    padding:10px 18px; cursor:pointer; border-radius:4px;
-    border:2px solid rgba(255,255,255,.6); color:#fff;
-    transition:background .15s, box-shadow .15s;
-  }
-  #diffToggleBtn:hover{ background:rgba(255,255,255,.12); box-shadow:0 0 14px rgba(255,255,255,.3); }
-  #diffOptions{
-    display:none; flex-direction:column; gap:8px;
-    background:rgba(0,0,0,.55); padding:10px; border-radius:6px;
-  }
-  #diffOptions.show{ display:flex; }
-  .diffBtn{
-    background:transparent;
-    font-family:'Trebuchet MS',Arial,sans-serif;
-    font-size:14px; font-weight:bold; letter-spacing:2px;
-    padding:9px 22px; cursor:pointer; border-radius:3px;
-    border:2px solid rgba(255,255,255,.5); color:rgba(255,255,255,.75);
-    text-align:left;
-    transition:background .15s, border-color .15s, color .15s, box-shadow .15s;
-  }
-  .diffBtn:hover{ border-color:#fff; color:#fff; }
-  .diffBtn[data-diff="easy"].active{ border-color:#39ff6e; color:#39ff6e; background:rgba(57,255,110,.12); box-shadow:0 0 14px rgba(57,255,110,.5); }
-  .diffBtn[data-diff="normal"].active{ border-color:#ffdd33; color:#ffdd33; background:rgba(255,221,51,.12); box-shadow:0 0 14px rgba(255,221,51,.5); }
-  .diffBtn[data-diff="brutal"].active{ border-color:#ff3333; color:#ff5555; background:rgba(255,51,51,.14); box-shadow:0 0 14px rgba(255,51,51,.55); }
+#diffCorner{
+display; flex-direction; align-items; gap:10px;
+pointer-events;
+}
+#diffToggleBtn{
+background(0,0,0,.35);
+font-family:'Trebuchet MS',Arial,sans-serif;
+font-size:14px; font-weight; letter-spacing:2px;
+padding:10px 18px; cursor; border-radius:4px;
+border:2px solid rgba(255,255,255,.6); color:#fff;
+transition .15s, box-shadow .15s;
+}
+#diffToggleBtn{ background(255,255,255,.12); box-shadow:0 0 14px rgba(255,255,255,.3); }
+#diffOptions{
+display; flex-direction; gap:8px;
+background(0,0,0,.55); padding:10px; border-radius:6px;
+}
+#diffOptions.show{ display; }
+.diffBtn{
+background;
+font-family:'Trebuchet MS',Arial,sans-serif;
+font-size:14px; font-weight; letter-spacing:2px;
+padding:9px 22px; cursor; border-radius:3px;
+border:2px solid rgba(255,255,255,.5); color(255,255,255,.75);
+text-align;
+transition .15s, border-color .15s, color .15s, box-shadow .15s;
+}
+.diffBtn
+.diffBtn[data-diff="easy"].active{ border-color:#39ff6e; color:#39ff6e; background(57,255,110,.12); box-shadow:0 0 14px rgba(57,255,110,.5); }
+.diffBtn[data-diff="normal"].active{ border-color:#ffdd33; color:#ffdd33; background(255,221,51,.12); box-shadow:0 0 14px rgba(255,221,51,.5); }
+.diffBtn[data-diff="brutal"].active{ border-color:#ff3333; color:#ff5555; background(255,51,51,.14); box-shadow:0 0 14px rgba(255,51,51,.55); }
 
-  /* ---------- stage complete overlay ---------- */
-  #stageCompleteScreen{
-    position:fixed;inset:0;z-index:75;
-    display:none;align-items:center;justify-content:center;flex-direction:column;
-    background:rgba(0,10,4,.9);color:#fff;
-    pointer-events:none;
-    opacity:0;transition:opacity .5s ease;
-  }
-  #stageCompleteScreen.show{ display:flex; opacity:1; }
-  #stageCompleteScreen h1{
-    font-size:52px;color:#39ff6e;margin:0 0 14px;letter-spacing:5px;
-    text-shadow:0 0 24px #22ff66,0 0 60px #0aff44,3px 3px 0 #000;
-    text-align:center;
-  }
-  #stageCompleteScreen p{ font-size:18px;margin:4px;opacity:.85; }
+/* ---------- stage complete overlay ---------- */
+#stageCompleteScreen{
+position;inset:0;z-index:75;
+display;align-items;justify-content;flex-direction;
+background(0,10,4,.9);color:#fff;
+pointer-events;
+opacity:0;transition .5s ease;
+}
+#stageCompleteScreen.show{ display; opacity:1; }
+#stageCompleteScreen h1{
+font-size:52px;color:#39ff6e;margin:0 0 14px;letter-spacing:5px;
+text-shadow:0 0 24px #22ff66,0 0 60px #0aff44,3px 3px 0 #000;
+text-align;
+}
+#stageCompleteScreen p{ font-size:18px;margin:4px;opacity:.85; }
 
-  .completedBadge{
-    position:absolute;top:8px;right:8px;z-index:2;
-    background:rgba(57,255,110,.16);border:1px solid #39ff6e;color:#39ff6e;
-    font-size:11px;font-weight:bold;letter-spacing:1px;
-    padding:4px 9px;border-radius:4px;display:none;
-  }
-  .completedBadge.show{ display:block; }
-  .bossReplayBadge{position:absolute;right:9px;bottom:42px;z-index:3;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.65);color:#fff;font-size:10px;font-weight:900;letter-spacing:1.5px;padding:5px 8px;border-radius:4px;display:none;text-shadow:0 1px 3px #000;}
-  .bossReplayBadge.show{display:block;}
+.completedBadge{
+position;top:8px;right:8px;z-index:2;
+background(57,255,110,.16);border:1px solid #39ff6e;color:#39ff6e;
+font-size:11px;font-weight;letter-spacing:1px;
+padding:4px 9px;border-radius:4px;display;
+}
+.completedBadge.show{ display; }
+.bossReplayBadge{position;right:9px;bottom:42px;z-index:3;background(255,255,255,.08);border:1px solid rgba(255,255,255,.65);color:#fff;font-size:10px;font-weight:900;letter-spacing:1.5px;padding:5px 8px;border-radius:4px;display;text-shadow:0 1px 3px #000;}
+.bossReplayBadge.show{display;}
 
-  /* ---------- pause / leave-confirm screen ---------- */
-  #pauseScreen{
-    position:fixed;inset:0;z-index:70;
-    display:none;align-items:center;justify-content:center;flex-direction:column;
-    background:rgba(0,0,0,.72);
-    pointer-events:auto;
-  }
-  #pauseScreen.show{ display:flex; }
-  #pauseTitle{
-    color:#fff;font-size:38px;font-weight:900;letter-spacing:5px;margin-bottom:36px;
-    text-shadow:0 0 16px rgba(255,255,255,.5);text-align:center;
-  }
-  #pauseBtnRow{ display:flex; gap:24px; }
+/* ---------- pause / leave-confirm screen ---------- */
+#pauseScreen{
+position;inset:0;z-index:70;
+display;align-items;justify-content;flex-direction;
+background(0,0,0,.72);
+pointer-events;
+}
+#pauseScreen.show{ display; }
+#pauseTitle{
+color:#fff;font-size:38px;font-weight:900;letter-spacing:5px;margin-bottom:36px;
+text-shadow:0 0 16px rgba(255,255,255,.5);text-align;
+}
+#pauseBtnRow{ display; gap:24px; }
 
 /* Settings readability */
 #settingsScreen, #settingsScreen *{color:#fff;}
@@ -218,28 +219,23 @@
 
 /* ---------- wake-up-from-black overlay (plays when ENTER is pressed) ---------- */
 #wakeOverlay{
-  position:fixed;inset:0;z-index:90;
-  background:#000;
-  opacity:0;
-  pointer-events:none;
+position;inset:0;z-index:90;
+background:#000;
+opacity:0;
+pointer-events;
 }
 #cubeDialogue{
-  position:fixed;left:50%;bottom:42px;transform:translateX(-50%);
-  width:min(900px,88vw);z-index:95;display:none;
-  text-align:center;color:#fff;pointer-events:none;
-  text-shadow:0 3px 5px #000,0 0 12px #000;
+position;left:50%;bottom:42px;transform(-50%);
+width(900px,88vw);z-index:95;display;
+text-align;color:#fff;pointer-events;
+text-shadow:0 3px 5px #000,0 0 12px #000;
 }
-#cubeDialogue.show{display:block;}
+#cubeDialogue.show{display;}
 #cubeSpeaker{font-size:18px;font-weight:900;letter-spacing:3px;margin-bottom:8px;}
 #cubeSubtitle{font-size:26px;font-weight:700;line-height:1.35;min-height:36px;}
 #cubeDialogue.silence #cubeSubtitle{opacity:0;}
-
-  #bossStagesBtn{position:fixed;right:22px;bottom:22px;z-index:68;font-size:15px;padding:12px 18px;letter-spacing:3px;pointer-events:auto;}
-  #bossStageSelect{position:fixed;inset:0;z-index:76;display:none;flex-direction:column;align-items:flex-start;background:rgba(0,0,0,.92);pointer-events:auto;padding:48px 56px;box-sizing:border-box;}
-  #bossStageSelect.show{display:flex;} #bossStageSelect h1{letter-spacing:8px;margin:0 0 28px;font-size:28px;}
-  #multiBossBars{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:56%;max-width:760px;min-width:320px;display:none;flex-direction:column;gap:7px;}
-  #multiBossBars.show{display:flex}.miniBossRow .miniBossName{text-align:center;font-size:14px;font-weight:900;letter-spacing:3px;text-shadow:0 0 8px #f00,2px 2px #000}.miniBossBg{height:15px;background:#200404;border:2px solid #000;border-radius:4px;overflow:hidden}.miniBossFill{height:100%;width:100%;background:linear-gradient(90deg,#8a0000,#ff1414 55%,#ff5a3d);}
 </style>
+
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -255,11 +251,6 @@
   <div id="bossBarWrap">
     <div id="bossName">MUTATED GREEN</div>
     <div id="bossBarBg"><div id="bossBar"></div></div>
-  </div>
-  <div id="multiBossBars">
-    <div class="miniBossRow"><div class="miniBossName" id="cubeBossName0"></div><div class="miniBossBg"><div class="miniBossFill" id="cubeBossBar0"></div></div></div>
-    <div class="miniBossRow"><div class="miniBossName" id="cubeBossName1"></div><div class="miniBossBg"><div class="miniBossFill" id="cubeBossBar1"></div></div></div>
-    <div class="miniBossRow"><div class="miniBossName" id="cubeBossName2"></div><div class="miniBossBg"><div class="miniBossFill" id="cubeBossBar2"></div></div></div>
   </div>
   <div id="banner"></div>
   <div id="calibText"></div><div id="parryPulse"></div>
@@ -283,7 +274,6 @@
     </div>
   </div>
 </div>
-<button id="bossStagesBtn" class="bigBtn">BOSS STAGES</button>
 <div id="settingsScreen"><div id="settingsPanel">
   <h2>SETTINGS</h2>
   <div class="settingRow"><span><span style="color:#fff">PARRY VOLUME</span></span><input id="parryVolume" type="range" min="0" max="100"></div>
@@ -297,25 +287,17 @@
     <div id="stage1Card" class="stageCard">
       <div class="completedBadge" id="stage1Badge">✓ COMPLETED</div>
       <canvas class="stageThumb" id="thumb1" width="300" height="160"></canvas>
-      <div class="stageCardTitle">MATRIX</div>
+      <div class="stageCardTitle">STARTING TO BELIEVE</div>
     </div>
-    <div id="stage2Card" class="stageCard">
+    <div id="stage2Card" class="stageCard locked">
       <div class="completedBadge" id="stage2Badge">✓ COMPLETED</div>
+      <div class="bossReplayBadge" id="stage2BossBadge">BOSS · CUBE V2</div>
       <canvas class="stageThumb" id="thumb2" width="300" height="160"></canvas>
-      <div class="stageCardTitle">ME</div>
+      <div class="stageCardTitle" id="stage2Title">BOSS STAGE</div>
+      <div class="lockOverlay"><span class="lockIcon">🔒</span>COMPLETE<br>STARTING TO BELIEVE<br>TO UNLOCK</div>
     </div>
   </div>
   <button id="stageBackBtn" class="bigBtn" style="margin-top:32px;">BACK</button>
-</div>
-<div id="bossStageSelect">
-  <h1>BOSS STAGES</h1>
-  <div id="bossStageGrid">
-    <div id="cubeV2BossCard" class="stageCard">
-      <canvas class="stageThumb" id="bossThumbCube" width="300" height="160"></canvas>
-      <div class="stageCardTitle">CUBE V2</div>
-    </div>
-  </div>
-  <button id="bossStageBackBtn" class="bigBtn" style="margin-top:32px;">BACK</button>
 </div>
 <div id="pauseScreen">
   <div id="pauseTitle">LEAVE THE SIMULATION?</div>
@@ -463,17 +445,17 @@ function fitWorldToMapImg(img){
   player.x = WORLD.w / 2;
   player.y = WORLD.h / 2;
 }
-// ME (Stage 1) uses map2.png. Boss Stages (Stage 2) uses Map.png.
+// Stage 1 uses Map.png, Stage 2 uses map2.png.
 function currentMapImg(){
-  return currentStage === 1 ? IMG.map2 : IMG.map;
+  return currentStage === 2 ? IMG.map2 : IMG.map;
 }
 IMG.map.onload = () => {
   IMG.map.loaded = true;
-  if(currentStage === 2) fitWorldToMapImg(IMG.map);
+  if(currentStage === 1) fitWorldToMapImg(IMG.map);
 };
 IMG.map2.onload = () => {
   IMG.map2.loaded = true;
-  if(currentStage === 1) fitWorldToMapImg(IMG.map2);
+  if(currentStage === 2) fitWorldToMapImg(IMG.map2);
 };
 
 const camera = { x: 0, y: 0 };
@@ -563,10 +545,6 @@ const STAGE2_BOSS_KILL_THRESHOLD = 200;
 let stage2BossTriggered = false;
 let stage2BossFinished = false;
 let cubeV2Ref = null;
-let cubeV2Clones = [];
-let cubeV2BossBars = [];
-let cubeCloneSpawnQueue = []; // fake cubes arrive later, not at fight start
-let cubeEncounterStage = 2;
 
 window.addEventListener('keydown', e => {
   if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
@@ -635,8 +613,6 @@ function backToMainMenu(){
   document.getElementById('deathScreen').style.display = 'none';
   document.getElementById('stageCompleteScreen').classList.remove('show');
   stageSelect.classList.remove('show');
-  document.getElementById('bossStageSelect').classList.remove('show');
-  document.getElementById('bossStagesBtn').style.display='';
 
   playingReal = false;
   inStages = false;
@@ -675,7 +651,25 @@ function tryParry(){
     }
   }
 
-  // Cube V2 bullets cannot be parried.
+  // Cube V2 gun bullets are normal parryable projectiles.
+  let cubeBulletParried = false;
+  const cubeBulletParryRange = 112 * DIFF.parryRangeMult;
+  for(const cb of cubeBullets){
+    if(cb.parried) continue;
+    if(dist(cb.x,cb.y,player.x,player.y) <= cubeBulletParryRange){
+      const mw = mouseWorld();
+      const aim = Math.atan2(mw.y-player.y, mw.x-player.x);
+      const speed = Math.max(1100, Math.hypot(cb.vx,cb.vy)*1.45);
+      cb.x = player.x; cb.y = player.y;
+      cb.vx = Math.cos(aim)*speed; cb.vy = Math.sin(aim)*speed;
+      cb.owner = 'player'; cb.parried = true;
+      cb.dmg = 115 * DIFF.playerDmgMult;
+      cubeBulletParried = true;
+      lastParriedOrbPos = {x:cb.x,y:cb.y};
+      player.hp = player.maxHp;
+      spawnExplosion(cb.x,cb.y,0.55);
+    }
+  }
 
   // Shotgun mermisini parryleyince mermi kaybolmaz: bulunduğu yerde patlar ve düz devam eden 2x hasarlı patlayıcı mermi olur.
   let shotgunParried = false;
@@ -889,14 +883,6 @@ function updateAutoPilot(dt){
     mv.y = Math.sin(botAimAngle);
   }
 
-  // Keep the menu demo character around the middle instead of letting it camp corners.
-  const cx=WORLD.w/2, cy=WORLD.h/2;
-  const dcx=cx-player.x, dcy=cy-player.y, centerDist=Math.hypot(dcx,dcy)||1;
-  if(centerDist>420){
-    const pull=Math.min(1,(centerDist-420)/500);
-    mv.x = mv.x*(1-pull*0.72) + (dcx/centerDist)*(pull*1.15);
-    mv.y = mv.y*(1-pull*0.72) + (dcy/centerDist)*(pull*1.15);
-  }
   // smooth the movement vector itself so direction changes ease in/out
   // instead of instantly flipping - feels far less twitchy/robotic
   const moveSmooth = Math.min(1, dt * 7);
@@ -985,7 +971,7 @@ function spawnEnemy(){
   x = clamp(x, 20, WORLD.w-20); y = clamp(y, 20, WORLD.h-20);
 
   let type;
-  if(currentStage === 1){
+  if(currentStage === 2){
     const r = Math.random();
     type = r < 0.4 ? 'green' : (r < 0.7 ? 'glob' : 'knight');
   } else {
@@ -1012,7 +998,7 @@ function spawnEnemy(){
     // shots back at us with its sword before hopping away again.
     // Stage 2 bazen güçlendirilmiş Knight spawn eder: daha büyük, daha hızlı,
     // daha fazla hasarlı ve daha büyük kılıçlı.
-    const buffed = currentStage === 1 && Math.random() < 0.18;
+    const buffed = currentStage === 2 && Math.random() < 0.18;
     const hp = (buffed ? 180 : 90) * DIFF.enemyHpMult;
     const radius = buffed ? 36 : 26;
     enemies.push({
@@ -1108,34 +1094,27 @@ function registerKill(e, exploded){
   // tetiklemez; rastgele başka bir düşman asla boss'a çevrilmez - eşiği
   // geçtikten sonraki ilk green kill'i gelene kadar beklenir. Eşik her
   // tetiklemede +50 artar, böylece boss arasıra tekrar tekrar çıkar.
-  // ME: the normal monsters keep spawning until 200 real kills. The 200th kill
-  // is counted normally; Cube V2 is spawned immediately afterwards by update().
+  if(!bossActive && currentStage!==2 && willBeKillNum >= nextBossThreshold && e.type === 'green'){
+    mutateToBoss(e);
+    nextBossThreshold += 100;
+    // Bu kill iptal - enemy ölmüyor, mutasyona giriyor.
+    return false;
+  }
 
-  if(e === bossEnemyRef && !(currentStage===2 && e.type==='cubev2')){
+  if(e === bossEnemyRef){
     bossActive = false;
     bossEnemyRef = null;
   }
 
   if(e.type === 'cubev2'){
-    if(e.isClone) cubeV2Clones = cubeV2Clones.filter(c=>c!==e);
-    else cubeV2Ref = null;
-
-    // Count the two clones + real Cube as one 3-part boss encounter.
-    const remainingCubeBosses = enemies.filter(en => en!==e && en.type==='cubev2' && en.hp>0);
-    bossActive = remainingCubeBosses.length>0;
-    bossEnemyRef = remainingCubeBosses[0] || null;
-
-    if(remainingCubeBosses.length===0 && cubeCloneSpawnQueue.length===0){
+    cubeV2Ref = null;
+    if(currentStage===2 && !stage2BossFinished){
+      stage2BossFinished = true;
+      localStorage.setItem('kt_stage2_complete','1');
       banner.text = 'CUBE V2 DESTROYED'; banner.timer = 2.2;
       screenShake = { timer:1.2, duration:1.2, strength:18 };
       for(let n=0;n<30;n++) spawnExplosion(e.x+(Math.random()-.5)*300, e.y+(Math.random()-.5)*300, 1+Math.random()*1.6);
-      if(cubeEncounterStage===2 && !stage2BossFinished){
-        stage2BossFinished=true; localStorage.setItem('kt_stage2_complete','1');
-        setTimeout(() => { if(player.alive) showStageCompleteScreen(2); }, 900);
-      } else if(cubeEncounterStage===3 && !stage2BossFinished){
-        stage2BossFinished=true; localStorage.setItem('kt_stage3_complete','1');
-        setTimeout(() => { if(player.alive) showStageCompleteScreen(3); }, 900);
-      }
+      setTimeout(() => { if(player.alive) showStageCompleteScreen(2); }, 900);
     }
   }
 
@@ -1390,10 +1369,8 @@ function update(dt){
       spawnExplosion(cb.x,cb.y,0.45);
       cubeBullets.splice(i,1); continue;
     }
-    let parryTarget=null;
-    if(cb.owner==='player'){ parryTarget=enemies.find(en=>en.type==='cubev2' && !en.mutating && dist(cb.x,cb.y,en.x,en.y)<en.radius+8) || null; }
-    if(cb.owner==='player' && parryTarget){
-      const e=parryTarget;
+    if(cb.owner==='player' && cubeV2Ref && !cubeV2Ref.mutating && dist(cb.x,cb.y,cubeV2Ref.x,cubeV2Ref.y)<cubeV2Ref.radius+8){
+      const e=cubeV2Ref;
       // No single parry volley can remove more than 3% of V2's max HP.
       const now=performance.now();
       if(now > (e.parryDamageWindowUntil||0)){ e.parryDamageWindowUntil=now+140; e.parryDamageTaken=0; }
@@ -1470,22 +1447,11 @@ function update(dt){
   }
 
   // ----- stage progression -----
-  // MATRIX: Green + Glob waves. At 100 kills the normal MUTATED GREEN boss appears.
   if(!autoPilot && currentStage===1 && !stageMutationTriggered && player.totalKills >= 100){
-    stageMutationTriggered = true;
-    const candidate = enemies.find(e=>e.type==='green' && !e.isBoss) || (()=>{ spawnEnemy(); return enemies[enemies.length-1]; })();
-    if(candidate && candidate.type==='green') mutateToBoss(candidate);
+    triggerStage1Mutation();
   }
-  // ME: map2, Green + Glob + Knights. At 200 kills Cube V2 enters this level.
-  if(!autoPilot && currentStage===2 && !stage2BossFinished && !stage2BossTriggered && player.totalKills >= 200){
-    triggerCubeV2(2);
-  }
-  // Fake cubes deliberately arrive later during the encounter.
-  if(cubeCloneSpawnQueue.length){
-    for(let i=cubeCloneSpawnQueue.length-1;i>=0;i--){
-      const q=cubeCloneSpawnQueue[i]; q.time-=dt;
-      if(q.time<=0){ spawnCubeClone(q.side); cubeCloneSpawnQueue.splice(i,1); }
-    }
+  if(!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished && enemies.length === 0){
+    finishStage1();
   }
   // Stage 2 is a straight boss rush now: triggerCubeV2() is fired the
   // moment the player wakes up in the stage (see launchStage), so there
@@ -1505,14 +1471,13 @@ function update(dt){
   let spawnCap, spawnInterval;
   // After the Stage 1 global mutation fires, no more reinforcements spawn -
   // every enemy still alive at that moment has to be cleared to finish the stage.
-  const stage1LastStand = (!autoPilot && currentStage===1 && bossActive);
-  const stage2LastStand = (!autoPilot && currentStage===2 && stage2BossTriggered);
+  const stage1LastStand = (!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished);
   // Stage 2 never spawns regular waves - it's the boss (and only the boss).
-  const stage2NoSpawns = (!autoPilot && currentStage===3);
+  const stage2NoSpawns = (!autoPilot && currentStage===2);
   if(autoPilot){
     spawnCap = 100 + waveDifficulty;
     spawnInterval = Math.max(0.08, 0.35 - waveDifficulty*0.01);
-  } else if(stage1LastStand || stage2LastStand || stage2NoSpawns){
+  } else if(stage1LastStand || stage2NoSpawns){
     spawnCap = 0;
     spawnInterval = 999;
   } else {
@@ -1690,10 +1655,9 @@ function updateKnight(e, dt){
 // attack is a parryable orb burst; while its "deflect" phase is active,
 // our raw bullets bounce off it back at us instead of dealing damage
 // (parried shots still hurt it fine) - so parry is the real way to beat it.
-function triggerCubeV2(encounterStage=currentStage){
+function triggerCubeV2(){
   if(stage2BossTriggered) return;
   stage2BossTriggered = true;
-  cubeEncounterStage = encounterStage;
   banner.text = ''; banner.timer = 0;
 
   for(const en of enemies) spawnExplosion(en.x, en.y, 1.2);
@@ -1724,11 +1688,6 @@ function triggerCubeV2(encounterStage=currentStage){
   };
   enemies.push(e);
   cubeV2Ref = e;
-  cubeV2Clones = [];
-  cubeV2BossBars = [e, null, null];
-  // The fake cubes do NOT spawn immediately. They enter later, one at a time,
-  // and are never labeled differently from the real one.
-  cubeCloneSpawnQueue = [{time:8.0,side:-1},{time:16.0,side:1}];
   bossEnemyRef = e;
   bossActive = true;
 
@@ -1741,17 +1700,6 @@ function triggerCubeV2(encounterStage=currentStage){
   setTimeout(() => {
     if(cubeV2Ref===e && player.alive && currentStage===2) startCubeDialogue();
   }, 450);
-}
-
-function spawnCubeClone(side){
-  if(!cubeV2Ref || !player.alive) return;
-  const base=cubeV2Ref;
-  const c={...base, isClone:true, bossName:'CUBE V2', hp:base.maxHp*0.5, maxHp:base.maxHp*0.5, dmg:18, speed:225,
-    x:clamp(player.x+side*260,player.radius,WORLD.w-player.radius), y:clamp(player.y-120,player.radius,WORLD.h-player.radius),
-    weaponTimer:1.4+Math.random(), gunFireTimer:.65+Math.random()*.35, dashTimer:1.6+Math.random(), parryTimer:9999, parryActive:false, tauntTimer:9999};
-  enemies.push(c); cubeV2Clones.push(c);
-  const slot=side<0?1:2; cubeV2BossBars[slot]=c;
-  spawnExplosion(c.x,c.y,1.0);
 }
 
 function cubeV2OrbBurst(e){
@@ -1912,7 +1860,7 @@ function finishStage1(){
 function showStageCompleteScreen(n){
   const el = document.getElementById('stageCompleteScreen');
   document.getElementById('stageCompleteTitle').textContent =
-    (n===1 ? 'MATRIX' : (n===2 ? 'ME' : 'CUBE V2')) + ' COMPLETE';
+    (n===1 ? 'STARTING TO BELIEVE' : 'CUBE V2') + ' COMPLETE';
   document.getElementById('stageCompleteStats').textContent =
     `Total kills: ${player.totalKills}  •  Best streak: ${player.killStreak}`;
   el.classList.add('show');
@@ -2124,7 +2072,7 @@ function render(){
     }
     ctx.fillStyle='rgba(255,255,255,.35)';
     ctx.font='bold 13px Arial';
-    const missingName = currentStage===1 ? 'images/map2.png' : 'images/Map.png';
+    const missingName = currentStage===2 ? 'images/map2.png' : 'images/Map.png';
     ctx.fillText(missingName+' not found - showing placeholder ground', 16, canvas.height-16);
   }
 
@@ -2515,15 +2463,7 @@ function updateUI(){
   document.getElementById('streakText').textContent = `Stage: ${currentStage}  •  Streak: ${player.killStreak}  •  Kills: ${player.totalKills}`;
 
   const bossWrapEl = document.getElementById('bossBarWrap');
-  const multiBossEl = document.getElementById('multiBossBars');
-  // Fake Cubes never get their own UI health bars. The only visible boss bar
-  // belongs to the real Cube V2, even after the clones join the fight.
-  multiBossEl.classList.remove('show');
-  if(stage2BossTriggered && cubeV2Ref && cubeV2Ref.hp>0){
-    bossWrapEl.classList.add('show');
-    document.getElementById('bossName').textContent = 'CUBE V2';
-    document.getElementById('bossBar').style.width = Math.max(0, 100*cubeV2Ref.hp/cubeV2Ref.maxHp)+'%';
-  } else if(bossActive && bossEnemyRef){
+  if(bossActive && bossEnemyRef){
     bossWrapEl.classList.add('show');
     document.getElementById('bossName').textContent = bossEnemyRef.bossName || 'MUTATED GREEN';
     document.getElementById('bossBar').style.width = Math.max(0, 100*bossEnemyRef.hp/bossEnemyRef.maxHp)+'%';
@@ -2568,7 +2508,7 @@ function restartGame(){
   spawnTimer = 1.0; waveDifficulty = 1;
   weapon = 'gun'; // every level starts back on weapon 1
   nextBossThreshold = 100; bossEnemyRef = null; stageMutationTriggered=false; stage1Finished=false; bossActive = false;
-  stage2BossTriggered = false; stage2BossFinished = false; cubeV2Ref = null; cubeV2Clones = []; cubeV2BossBars = []; cubeCloneSpawnQueue = []; cubeEncounterStage=currentStage; cubeBullets = [];
+  stage2BossTriggered = false; stage2BossFinished = false; cubeV2Ref = null; cubeBullets = [];
   screenShake = { timer:0, duration:1, strength:0 };
   bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
   healPulseTimer = 0;
@@ -2576,14 +2516,6 @@ function restartGame(){
   botMoveX = 0; botMoveY = 0;
   document.getElementById('deathScreen').style.display = 'none';
   lastTime = performance.now();
-
-  // TRY AGAIN on the dedicated Cube V2 boss stage must restart the full
-  // encounter, including the real Cube and the later-arriving clones.
-  if(currentStage===3){
-    setTimeout(() => {
-      if(player.alive && currentStage===3 && !stage2BossTriggered) triggerCubeV2(3);
-    }, 0);
-  }
 }
 
 // ---------- SETTINGS ----------
@@ -2600,28 +2532,69 @@ parryVolumeInput.oninput=()=>{parryVolume=parryVolumeInput.value/100;localStorag
 musicVolumeInput.oninput=()=>{musicVolume=musicVolumeInput.value/100;musicElevator.volume=musicVolume;musicGame.volume=musicVolume;musicGame2.volume=musicVolume;divineMusic.volume=musicVolume;localStorage.setItem('kt_music_volume',musicVolume);};
 sfxVolumeInput.oninput=()=>{masterSfxVolume=sfxVolumeInput.value/100;localStorage.setItem('kt_sfx_volume',masterSfxVolume);};
 
-// ---------- STAGE SELECT / BOSS STAGES ----------
+// ---------- STAGE SELECT ----------
 const stageSelect=document.getElementById('stageSelect');
-const bossStageSelect=document.getElementById('bossStageSelect');
-function updateStageCompletionUI(){ document.getElementById('stage1Badge').classList.toggle('show', !!localStorage.getItem('kt_stage1_complete')); document.getElementById('stage2Badge').classList.toggle('show', !!localStorage.getItem('kt_stage2_complete')); }
+
+// Stage 2 is only ever allowed once Stage 1 has actually been finished.
+// This is checked both when drawing the lock UI (so the card visibly
+// looks locked/disabled and can't be clicked) AND again inside launchStage
+// itself as a hard safety net, so there is no path - card click, stray
+// call, anything - that can start Stage 2 early.
+function isStage2Unlocked(){
+  return !!localStorage.getItem('kt_stage1_complete');
+}
+function updateStageLockUI(){
+  const unlocked = isStage2Unlocked();
+  document.getElementById('stage2Card').classList.toggle('locked', !unlocked);
+  // Don't spoil the boss's name while the stage is still locked - only
+  // reveal "CUBE V2" once Stage 1 has actually been completed.
+  document.getElementById('stage2Title').textContent = unlocked ? 'CUBE V2' : 'BOSS STAGE';
+}
+function updateStageCompletionUI(){
+  document.getElementById('stage1Badge').classList.toggle('show', !!localStorage.getItem('kt_stage1_complete'));
+  const done2=!!localStorage.getItem('kt_stage2_complete');
+  document.getElementById('stage2Badge').classList.toggle('show', done2);
+  document.getElementById('stage2BossBadge').classList.toggle('show', done2);
+}
+
 function openStageSelect(){
-  updateStageCompletionUI(); document.getElementById('mainMenu').classList.add('hidden'); document.getElementById('bossStagesBtn').style.display='none'; stageSelect.classList.add('show');
+  updateStageLockUI();
+  updateStageCompletionUI();
+  document.getElementById('mainMenu').classList.add('hidden');
+  stageSelect.classList.add('show');
 }
-function openBossStageSelect(){
-  document.getElementById('mainMenu').classList.add('hidden'); document.getElementById('bossStagesBtn').style.display='none'; bossStageSelect.classList.add('show');
-}
+
+// Clicking a stage card jumps straight into that run - no title/ENTER
+// screen in between.
 function launchStage(n){
-  currentStage=n; stageSelect.classList.remove('show'); bossStageSelect.classList.remove('show'); document.getElementById('bossStagesBtn').style.display='none';
-  inStages=false; inMenu=false; autoPilot=false; playingReal=true; document.getElementById('ui').style.display='';
-  const mapImg=currentMapImg(); if(mapImg.loaded) fitWorldToMapImg(mapImg);
-  restartGame(); playWakeUpEffect(); tryPlayMusic(currentGameMusic(),()=>gameStarted&&playingReal); if(n===3) triggerCubeV2(3);
+  if(n===2 && !isStage2Unlocked()) return; // locked - refuse, just in case
+
+  currentStage = n;
+  stageSelect.classList.remove('show');
+
+  inStages = false;
+  inMenu = false;
+  autoPilot = false;
+  playingReal = true;
+  document.getElementById('ui').style.display = '';
+
+  const mapImg = currentMapImg();
+  if(mapImg.loaded) fitWorldToMapImg(mapImg);
+
+  restartGame();
+  playWakeUpEffect();
+  tryPlayMusic(currentGameMusic(), () => gameStarted && playingReal);
+
+  // Stage 2 is a boss-rush stage: the moment the player wakes up here,
+  // Cube V2 grows in immediately and its dialogue plays right away -
+  // there's no regular wave-clearing before the fight anymore.
+  if(n===2){
+    triggerCubeV2();
+  }
 }
 document.getElementById('stage1Card').onclick=()=>launchStage(1);
 document.getElementById('stage2Card').onclick=()=>launchStage(2);
-document.getElementById('cubeV2BossCard').onclick=()=>launchStage(3);
-document.getElementById('bossStagesBtn').onclick=()=>{gameStarted=true;musicElevator.pause();musicElevator.currentTime=0;openBossStageSelect();};
-document.getElementById('stageBackBtn').onclick=()=>{stageSelect.classList.remove('show');document.getElementById('mainMenu').classList.remove('hidden');document.getElementById('bossStagesBtn').style.display='';};
-document.getElementById('bossStageBackBtn').onclick=()=>{bossStageSelect.classList.remove('show');document.getElementById('mainMenu').classList.remove('hidden');document.getElementById('bossStagesBtn').style.display='';};
+document.getElementById('stageBackBtn').onclick=()=>{stageSelect.classList.remove('show');document.getElementById('mainMenu').classList.remove('hidden');};
 
 // ---------- STAGE THUMBNAIL PREVIEWS ----------
 // Each stage card shows a small live canvas with its own map and a tiny
@@ -2640,14 +2613,11 @@ function makeThumbState(mapImg, kinds){
   };
 }
 const thumb1Canvas = document.getElementById('thumb1');
-const thumbMeCanvas = document.getElementById('thumb2');
-const thumb2Canvas = document.getElementById('bossThumbCube');
+const thumb2Canvas = document.getElementById('thumb2');
 const thumb1Ctx = thumb1Canvas.getContext('2d');
-const thumbMeCtx = thumbMeCanvas.getContext('2d');
 const thumb2Ctx = thumb2Canvas.getContext('2d');
-const thumbState1 = makeThumbState(IMG.map, ['green','glob','green']);
-const thumbStateMe = makeThumbState(IMG.map2, ['cubev2','knight','green','glob']);
-const thumbState2 = makeThumbState(IMG.map2, ['cubev2','cubev2']);
+const thumbState1 = makeThumbState(IMG.map,  ['green','glob','green']);
+const thumbState2 = makeThumbState(IMG.map2, ['glob','green','glob']);
 
 function drawThumb(tctx, tcanvas, state, dt){
   state.t += dt;
@@ -2677,11 +2647,10 @@ function drawThumb(tctx, tcanvas, state, dt){
     if(ed > 30){ e.x += (edx/ed)*20*dt; e.y += (edy/ed)*20*dt; }
     e.x = clamp(e.x, 8, w-8); e.y = clamp(e.y, 8, h-8);
 
-    const eImg = e.type==='green' ? IMG.green : (e.type==='knight' ? IMG.knight : (e.type==='cubev2' ? null : IMG.glob));
+    const eImg = e.type==='green' ? IMG.green : IMG.glob;
     tctx.save();
     tctx.translate(e.x, e.y);
-    if(eImg && eImg.loaded){ tctx.drawImage(eImg, -9, -9, 18, 18); }
-    else if(e.type==='cubev2'){ tctx.fillStyle='#d8d8e6'; tctx.fillRect(-9,-9,18,18); tctx.strokeStyle='#ff3333'; tctx.lineWidth=2; tctx.strokeRect(-9,-9,18,18); }
+    if(eImg.loaded){ tctx.drawImage(eImg, -9, -9, 18, 18); }
     else { tctx.fillStyle = e.type==='green' ? '#2ecc40' : '#e6c419'; tctx.beginPath(); tctx.arc(0,0,6,0,Math.PI*2); tctx.fill(); }
     tctx.restore();
   }
@@ -2713,9 +2682,8 @@ let thumbLastTime = performance.now();
 function thumbLoop(now){
   const dt = Math.min(0.05, (now-thumbLastTime)/1000);
   thumbLastTime = now;
-  if(stageSelect.classList.contains('show') || bossStageSelect.classList.contains('show')){
+  if(stageSelect.classList.contains('show')){
     drawThumb(thumb1Ctx, thumb1Canvas, thumbState1, dt);
-    drawThumb(thumbMeCtx, thumbMeCanvas, thumbStateMe, dt);
     drawThumb(thumb2Ctx, thumb2Canvas, thumbState2, dt);
   }
   requestAnimationFrame(thumbLoop);
@@ -2927,5 +2895,6 @@ function loop(now){
 requestAnimationFrame(loop);
 
 </script>
+
 </body>
 </html>
