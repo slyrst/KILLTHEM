@@ -213,6 +213,12 @@
 #settingsScreen, #settingsScreen *{color:#fff;}
 #settingsScreen label{color:#fff !important;}
 #settingsScreen input[type="range"]{accent-color:#fff;}
+
+#tutorialOverlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;pointer-events:none;background:#000;color:#fff;opacity:0;transition:opacity 1.2s ease;}
+#tutorialOverlay.show{display:flex;opacity:1;}
+#tutorialOverlay.wake{opacity:0;}
+#tutorialBox{text-align:center;font-size:26px;font-weight:bold;letter-spacing:3px;text-shadow:0 0 14px rgba(255,255,255,.55);max-width:720px;padding:30px;}
+#tutorialHint{margin-top:18px;font-size:16px;letter-spacing:2px;opacity:.85;}
 </style>
 </head>
 <body>
@@ -266,6 +272,7 @@
   <div class="stageSubtitle" id="stageSubtitle"></div>
   <button id="enterBtn" class="bigBtn">ENTER</button>
 </div>
+<div id="tutorialOverlay"><div id="tutorialBox"><div id="tutorialText">WAKE UP.</div><div id="tutorialHint"></div></div></div>
 <div id="pauseScreen">
   <div id="pauseTitle">LEAVE THE SIMULATION?</div>
   <div id="pauseBtnRow">
@@ -1953,10 +1960,12 @@ document.getElementById('playBtn').addEventListener('pointerdown', () => {
 document.getElementById('playBtn').addEventListener('click', () => {
   gameStarted=true; musicElevator.pause(); musicElevator.currentTime=0;
   openStageSelect();
-  tryPlayMusic(musicGame, () => gameStarted);
 });
 
 document.getElementById('enterBtn').addEventListener('click', () => {
+  // game music starts ONLY after ENTER, never when PLAY/stage select is opened.
+  musicGame.currentTime = 0;
+  tryPlayMusic(musicGame, () => gameStarted);
   const stagesEl = document.getElementById('stagesScreen');
   stagesEl.classList.remove('show');
 
@@ -1968,8 +1977,22 @@ document.getElementById('enterBtn').addEventListener('click', () => {
     playingReal = true;
     document.getElementById('ui').style.display = '';
     restartGame();
+    startWakeTutorial();
   }, 550);
 });
+
+function startWakeTutorial(){
+  const ov=document.getElementById('tutorialOverlay');
+  const text=document.getElementById('tutorialText');
+  const hint=document.getElementById('tutorialHint');
+  const steps=[['WAKE UP.',''],['SYSTEM ONLINE.','MOVE WITH WASD'],['NOW SHOOT SOMEONE.','LEFT CLICK TO FIRE'],['DASH THROUGH DANGER.','PRESS Q TO DASH'],['PARRY THE YELLOW ORBS.','PRESS F AT THE RIGHT TIME']];
+  let i=0; ov.style.display='flex'; ov.classList.remove('wake'); ov.classList.add('show');
+  function next(){
+    if(i>=steps.length){ ov.classList.remove('show'); ov.classList.add('wake'); setTimeout(()=>{ov.style.display='none';ov.classList.remove('wake');},1300); return; }
+    text.textContent=steps[i][0]; hint.textContent=steps[i][1]; i++; setTimeout(next,i===1?1800:2300);
+  }
+  next();
+}
 
 // ---------- GAME LOOP ----------
 function loop(now){
