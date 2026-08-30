@@ -644,7 +644,6 @@ const player = {
   x: WORLD.w/2, y: WORLD.h/2,
   radius: 22,
   speed: 260,
-  vx: 0, vy: 0, // current movement velocity, added onto bullets for momentum
   hp: 100, maxHp: 100,
   lastDir: { x: 1, y: 0 }, // last WASD direction, used for Q dash
   dashCooldown: 0, dashCooldownMax: 0.85,
@@ -777,8 +776,8 @@ function shoot(){
       bullets.push({
         x:player.x+Math.cos(pelletAng)*muzzleDist,
         y:player.y+Math.sin(pelletAng)*muzzleDist,
-        vx:Math.cos(pelletAng)*690 + player.vx,
-        vy:Math.sin(pelletAng)*690 + player.vy,
+        vx:Math.cos(pelletAng)*690,
+        vy:Math.sin(pelletAng)*690,
         dmg:22*DIFF.playerDmgMult,
         type:'shotgun',
         spawnX:player.x,
@@ -790,7 +789,7 @@ function shoot(){
   } else {
     player.fireCooldown = player.fireRate;
     if(!autoPilot) playSFX(SFX.shoot, 0.55);
-    bullets.push({x:player.x+Math.cos(ang)*muzzleDist,y:player.y+Math.sin(ang)*muzzleDist,vx:Math.cos(ang)*780 + player.vx,vy:Math.sin(ang)*780 + player.vy,dmg:22*DIFF.playerDmgMult,type:'gun'});
+    bullets.push({x:player.x+Math.cos(ang)*muzzleDist,y:player.y+Math.sin(ang)*muzzleDist,vx:Math.cos(ang)*780,vy:Math.sin(ang)*780,dmg:22*DIFF.playerDmgMult,type:'gun'});
   }
 }
 
@@ -1034,14 +1033,10 @@ function update(dt){
     player.dashTimer -= dt;
     player.x += player.lastDir.x * player.dashSpeed * dt;
     player.y += player.lastDir.y * player.dashSpeed * dt;
-    player.vx = player.lastDir.x * player.dashSpeed;
-    player.vy = player.lastDir.y * player.dashSpeed;
     if(player.dashTimer <= 0) player.dashing = false;
   } else {
     player.x += mv.x * player.speed * dt;
     player.y += mv.y * player.speed * dt;
-    player.vx = mv.x * player.speed;
-    player.vy = mv.y * player.speed;
   }
   player.x = clamp(player.x, player.radius, WORLD.w - player.radius);
   player.y = clamp(player.y, player.radius, WORLD.h - player.radius);
@@ -1765,7 +1760,6 @@ function restartGame(){
   player.x = WORLD.w/2; player.y = WORLD.h/2;
   player.hp = player.maxHp;
   player.alive = true;
-  player.vx = 0; player.vy = 0;
   player.killStreak = 0; player.totalKills = 0;
   player.dashCooldown = 0; player.dashing = false; player.invuln = 0;
   enemies = []; bullets = []; orbs = []; explosions = []; deathPieces = []; corpsePieces = [];
