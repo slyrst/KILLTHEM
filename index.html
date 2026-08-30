@@ -967,15 +967,22 @@ function spawnEnemy(){
   } else {
     // Knight: melee bruiser that dash-attacks the player and can parry
     // shots back at us with its sword before hopping away again.
-    const hp = 90 * DIFF.enemyHpMult;
+    // Stage 2 bazen güçlendirilmiş Knight spawn eder: daha büyük, daha hızlı,
+    // daha fazla hasarlı ve daha büyük kılıçlı.
+    const buffed = currentStage === 2 && Math.random() < 0.18;
+    const hp = (buffed ? 180 : 90) * DIFF.enemyHpMult;
+    const radius = buffed ? 36 : 26;
     enemies.push({
-      type:'knight', x, y, radius:26, hp, maxHp:hp, speed: 150 + waveDifficulty*4,
-      state:'chase', stateTimer:0, dmg: 24,
+      type:'knight', x, y, radius, hp, maxHp:hp,
+      speed: (buffed ? 235 : 205) + waveDifficulty*5,
+      state:'chase', stateTimer:0, dmg: buffed ? 48 : 24,
       dashFrom:{x:0,y:0}, dashTo:{x:0,y:0}, retreatDir:{x:0,y:0},
       hitCooldown:0, parryFlash:0,
-      swordTimer:0.9 + Math.random()*0.8,
-      swordCooldown:0, swordSwing:0,
+      swordTimer:0.65 + Math.random()*0.55,
+      swordCooldown: buffed ? 0.55 : 0.85, swordSwing:0,
       swordAngle:0,
+      swordScale: buffed ? 1.65 : 1.35,
+      buffed,
     });
   }
 }
@@ -1283,7 +1290,7 @@ function update(dt){
     }
 
     if(!sp.parried && sp.owner==='knight' &&
-       player.invuln<=0 && dist(sp.x,sp.y,player.x,player.y) < player.radius+18){
+       player.invuln<=0 && dist(sp.x,sp.y,player.x,player.y) < player.radius+(sp.buffed ? 30 : 22)){
       damagePlayer(sp.dmg);
       spawnExplosion(sp.x,sp.y,0.55);
       swordProjectiles.splice(i,1);
@@ -1509,15 +1516,15 @@ function updateKnight(e, dt){
   const d = dist(e.x,e.y,player.x,player.y);
 
   if(e.state === 'chase'){
-    if(d > 230){
+    if(d > 145){
       const ang = Math.atan2(player.y-e.y, player.x-e.x);
       e.x += Math.cos(ang)*e.speed*dt;
       e.y += Math.sin(ang)*e.speed*dt;
     }
 
-    if(d < 300 && e.swordCooldown <= 0){
+    if(d < (e.buffed ? 205 : 175) && e.swordCooldown <= 0){
       e.state = 'sword_windup';
-      e.stateTimer = 0.48;
+      e.stateTimer = e.buffed ? 0.36 : 0.42;
       e.swordAngle = Math.atan2(player.y-e.y, player.x-e.x);
       e.swordSwing = 0.48;
     }
@@ -1537,12 +1544,12 @@ function updateKnight(e, dt){
       e.state = 'sword_throw';
       e.stateTimer = 0.18;
       const ang = e.swordAngle;
-      const speed = 980;
+      const speed = e.buffed ? 1220 : 1080;
       swordProjectiles.push({
         x:e.x + Math.cos(ang)*(e.radius+24),
         y:e.y + Math.sin(ang)*(e.radius+24),
         vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed,
-        dmg:32, owner:'knight', parried:false, life:3.0, angle:ang
+        dmg:e.buffed ? 52 : 32, owner:'knight', parried:false, life:3.0, angle:ang, buffed:e.buffed
       });
       e.swordCooldown = 1.15;
       spawnExplosion(e.x + Math.cos(ang)*(e.radius+20),
@@ -2167,6 +2174,10 @@ function drawKnightEnemy(e, sx, sy){
   ctx.translate(sx,sy);
   if(facingRight) ctx.scale(-1,1);
 
+  if(e.buffed){
+    ctx.shadowColor='#ffb300';
+    ctx.shadowBlur=26;
+  }
   if(e.state==='sword_windup'){
     const flash = 0.5+0.5*Math.sin(performance.now()/45);
     ctx.shadowColor='#ff3333'; ctx.shadowBlur=22*flash;
@@ -2176,10 +2187,10 @@ function drawKnightEnemy(e, sx, sy){
 
   // Weapon is visibly held and swung, then disappears from the hand on throw.
   if(e.state!=='sword_throw'){
-    const swordSize=size*0.78;
+    const swordSize=size*(e.swordScale || 1.35);
     let handAngle=0.05;
     if(e.state==='sword_windup'){
-      const p=clamp(1-e.stateTimer/0.48,0,1);
+      const p=clamp(1-e.stateTimer/(e.buffed ? 0.36 : 0.42),0,1);
       handAngle=-1.25+p*0.25;
     } else {
       handAngle=Math.sin(performance.now()/220)*0.08;
@@ -2193,6 +2204,15 @@ function drawKnightEnemy(e, sx, sy){
     }
   }
   ctx.restore();
+
+  if(e.buffed){
+    ctx.save();
+    ctx.globalAlpha=0.75;
+    ctx.strokeStyle='#ffb300';
+    ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(sx,sy,size*0.62,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
 
   if(e.hitFlash>0){
     ctx.save();
