@@ -618,6 +618,9 @@ window.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('dragstart', e => e.preventDefault());
 window.addEventListener('selectstart', e => e.preventDefault());
 window.addEventListener('mouseup', () => mouseDown = false);
+window.addEventListener('wheel', e => {
+  e.preventDefault();
+}, { passive: false });
 
 // Only the real, player-controlled run can be paused with ESC - not the
 // main menu demo, not the stages intro screen.
@@ -1791,7 +1794,7 @@ function makeCubeV2Entity(cx, cy, opts){
   const ghp = (opts && opts.hp != null) ? opts.hp : (10000 * DIFF.bossHpMult);
   return {
     type:'cubev2', x:cx, y:cy, radius:player.radius, hp:ghp, maxHp:ghp,
-    isBoss:!isClone, bossName: (currentStage===3 && !isClone) ? 'CUBE V2' : '',
+    isBoss:!isClone, bossName: !isClone ? 'CUBE V2' : '',
     isClone,
     baseRadius:player.radius, targetRadius:player.radius, mutating:false, growTimer:0, growDuration:0,
     speed:255, dmg:28,
@@ -3041,17 +3044,6 @@ function updateCubeDialogue(dt){
   document.getElementById('cubeSubtitle').textContent=line.text;
   box.classList.toggle('silence',!line.text);
 
-  if(line.divine && currentStage!==3){
-    musicGame.pause(); musicGame2.pause();
-    musicGame.currentTime=0; musicGame2.currentTime=0;
-    musicGame.volume=0; musicGame2.volume=0;
-    divineMusic.pause();
-    divineMusic.currentTime=0;
-    divineMusic.volume=Math.max(0,Math.min(1,musicVolume));
-    const playDivine=()=>divineMusic.play().catch(()=>{});
-    playDivine();
-    setTimeout(playDivine,120);
-  }
 
   cubeDialogueTimer=line.duration+line.silence;
 }
