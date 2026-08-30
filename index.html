@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>KILLTHEM</title>
 <style>
-  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;font-family:'Trebuchet MS',Arial,sans-serif;user-select:none;-webkit-user-select:none;-moz-user-select:none;} body{position:fixed;inset:0;overscroll-behavior:none;} canvas{display:block;position:fixed;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;outline:0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Trebuchet MS',Arial,sans-serif;user-select:none;-webkit-user-select:none;-moz-user-select:none;border:none;outline:none;} canvas{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:block;}
   #game{display:block;cursor:crosshair;}
   #ui{
     position:fixed;top:0;left:0;width:100%;height:100%;
@@ -117,7 +117,9 @@
   #bossStagesBtn{
     position:absolute; right:34px; bottom:34px; z-index:3;
     font-size:18px; padding:12px 28px; letter-spacing:4px;
+    display:none;
   }
+  #bossStagesBtn.show{ display:block; }
   #bossStageSelect{
     position:fixed;inset:0;z-index:66;display:none;
     flex-direction:column;align-items:flex-start;justify-content:flex-start;
@@ -313,10 +315,11 @@
 <div id="bossStageSelect">
   <h1>BOSS STAGES</h1>
   <div id="stageGrid">
-    <div id="cubeV2Card" class="stageCard">
+    <div id="cubeV2Card" class="stageCard locked">
       <div class="completedBadge" id="cubeV2Badge">✓ COMPLETED</div>
       <canvas class="stageThumb" id="thumb3" width="300" height="160"></canvas>
       <div class="stageCardTitle">CUBE V2</div>
+      <div class="lockOverlay"><span class="lockIcon">🔒</span>COMPLETE<br>ME TO UNLOCK</div>
     </div>
   </div>
   <button id="bossStageBackBtn" class="bigBtn" style="margin-top:32px;">BACK</button>
@@ -349,15 +352,11 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 function resize(){
-  const w = Math.max(1, document.documentElement.clientWidth || window.innerWidth);
-  const h = Math.max(1, document.documentElement.clientHeight || window.innerHeight);
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  // Keep pixel-art / low-res assets sharp when scaled.
   ctx.imageSmoothingEnabled = false;
 }
-window.visualViewport?.addEventListener('resize', resize);
 window.addEventListener('resize', resize);
 resize();
 
@@ -2566,28 +2565,9 @@ function updateUI(){
 
 function showDeathScreen(){
   document.getElementById('finalStats').textContent =
-    currentStage === 3
-      ? 'CUBE V2 DEFEATED YOU  •  TRY AGAIN'
-      : `Total kills: ${player.totalKills}  •  Best streak: ${player.killStreak}`;
+    `Total kills: ${player.totalKills}  •  Best streak: ${player.killStreak}`;
   document.getElementById('deathScreen').style.display = 'flex';
 }
-
-// Boss Stage CUBE V2 is a self-contained fight. Dying never completes or
-// consumes the boss stage: TRY AGAIN rebuilds the V2 fight immediately.
-const _restartGameOriginal = restartGame;
-restartGame = function(){
-  _restartGameOriginal();
-  if(currentStage === 3 && playingReal && !autoPilot){
-    stage2BossTriggered = false;
-    stage2BossFinished = false;
-    cubeV2Ref = null;
-    cubeCloneSpawnTimer = -1;
-    cubeClonesSpawned = false;
-    bossEnemyRef = null;
-    bossActive = false;
-    triggerCubeV2();
-  }
-};
 
 function restartGame(){
   cubeDialogueActive=false;
@@ -2647,6 +2627,8 @@ function isStage2Unlocked(){
 }
 function updateStageLockUI(){
   document.getElementById('stage2Card').classList.toggle('locked', !isStage2Unlocked());
+  document.getElementById('bossStagesBtn').classList.toggle('show', !!localStorage.getItem('kt_stage2_complete'));
+  document.getElementById('cubeV2Card').classList.toggle('locked', !localStorage.getItem('kt_stage2_complete'));
 }
 function updateStageCompletionUI(){
   document.getElementById('stage1Badge').classList.toggle('show', !!localStorage.getItem('kt_stage1_complete'));
@@ -2670,6 +2652,7 @@ function openBossStageSelect(){
 
 function launchStage(n){
   if(n===2 && !isStage2Unlocked()) return;
+  if(n===3 && !localStorage.getItem('kt_stage2_complete')) return;
 
   currentStage = n;
   stageSelect.classList.remove('show');
