@@ -258,6 +258,7 @@ let botDashTimer = 1.6;
 let botWeaponTimer = 5;
 let botStrafeDir = 1;
 let botStrafeTimer = 2;
+let botMoveX = 0, botMoveY = 0; // smoothed movement vector, avoids jittery direction snaps
 
 // ---------- BOSS (MUTATED GREEN) ----------
 let bossTriggered = false;   // true once the 50th-kill mutation has fired
@@ -438,8 +439,12 @@ function updateAutoPilot(dt){
     if(d < bestD){ bestD = d; target = e; }
   }
 
+  // smoothly turn towards the target instead of snapping the aim straight
+  // to it every frame - reads a lot less robotic
   if(target){
-    botAimAngle = Math.atan2(target.y - player.y, target.x - player.x);
+    const desiredAngle = Math.atan2(target.y - player.y, target.x - player.x);
+    const diff = Math.atan2(Math.sin(desiredAngle - botAimAngle), Math.cos(desiredAngle - botAimAngle));
+    botAimAngle += diff * Math.min(1, dt * 11);
   } else {
     botAimAngle += dt * 0.5; // idle look-around when nothing's alive yet
   }
@@ -447,6 +452,16 @@ function updateAutoPilot(dt){
   // fake the mouse so mouseWorld()/shoot()/drawPlayer() all just work
   mouseScreen.x = canvas.width/2 + Math.cos(botAimAngle) * 140;
   mouseScreen.y = canvas.height/2 + Math.sin(botAimAngle) * 140;
+
+  // parry incoming yellow orbs on reaction - checked every frame so it
+  // catches them one at a time as they arrive, no matter how fast
+  for(const o of orbs){
+    if(o.parried) continue;
+    if(dist(o.x, o.y, player.x, player.y) <= 150){
+      tryParry();
+      break;
+    }
+  }
 
   // movement: hold a mid-range distance, strafing, back off if something
   // gets too close, otherwise close the distance
@@ -467,6 +482,12 @@ function updateAutoPilot(dt){
     mv.x = Math.cos(botAimAngle);
     mv.y = Math.sin(botAimAngle);
   }
+
+  // smooth the movement vector itself so direction changes ease in/out
+  // instead of instantly flipping - feels far less twitchy/robotic
+  const moveSmooth = Math.min(1, dt * 7);
+  botMoveX += (mv.x - botMoveX) * moveSmooth;
+  botMoveY += (mv.y - botMoveY) * moveSmooth;
 
   // shooting
   botFireTimer -= dt;
@@ -489,7 +510,7 @@ function updateAutoPilot(dt){
     botWeaponTimer = 4 + Math.random()*4;
   }
 
-  return mv;
+  return { x: botMoveX, y: botMoveY };
 }
 
 // ---------- BULLETS (player) ----------
@@ -514,7 +535,6 @@ function shoot(){
         vy:Math.sin(pelletAng)*690,
         dmg:22,
         type:'shotgun',
-        life:1.1,
         spawnX:player.x,
         spawnY:player.y,
         parriedExplosive:false, explosive:false, dmgMultiplier:1,
@@ -1464,6 +1484,7 @@ function restartGame(){
   bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
   healPulseTimer = 0;
   botAimAngle = 0; botFireTimer = 0.4; botDashTimer = 1.6; botWeaponTimer = 5; botStrafeDir = 1; botStrafeTimer = 2;
+  botMoveX = 0; botMoveY = 0;
   document.getElementById('deathScreen').style.display = 'none';
   lastTime = performance.now();
 }
