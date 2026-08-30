@@ -552,6 +552,8 @@ document.querySelectorAll('.diffBtn').forEach(btn => {
 let currentStage = 1;
 let stage1Finished = false;
 let stageMutationTriggered = false;
+let stageWeaponCollected = false; // Stage 1'de silah alındı mı
+let stage2WeaponCollected = false; // Stage 2'de shotgun alındı mı
 
 // ---------- BOSS (MUTATED GREEN) ----------
 let nextBossThreshold = 100;  // kill count needed for the NEXT mutation - increments by 50 each time, so the boss keeps coming back (arasıra çıksın)
@@ -951,6 +953,18 @@ function updateAutoPilot(dt){
 let bullets = [];
 let swordProjectiles = [];
 let cubeBullets = [];
+
+// ---------- WEAPON PICKUPS ----------
+let weaponPickups = [];
+function spawnWeaponPickup(type, x, y){
+  weaponPickups.push({
+    type: type, // 'gun' or 'shotgun'
+    x: x,
+    y: y,
+    radius: 20,
+    bobOffset: Math.random() * Math.PI * 2
+  });
+}
 function shoot(){
   if(player.fireCooldown > 0 || !player.alive) return;
   const mw = mouseWorld();
@@ -1524,6 +1538,28 @@ function update(dt){
   // showing the STAGE COMPLETE overlay and returning to the main menu -
   // so there is no automatic mid-run jump into the next stage anymore.
 
+  // ----- weapon pickups -----
+  for(let i=weaponPickups.length-1;i>=0;i--){
+    const wp = weaponPickups[i];
+    wp.bobOffset += dt * 3;
+    if(dist(player.x, player.y, wp.x, wp.y) < player.radius + wp.radius){
+      // Silah alındı
+      weapon = wp.type;
+      if(currentStage===1){
+        stageWeaponCollected = true;
+        spawnTimer = 1.0; // Enemy spawnlamayı başlat
+        banner.text = 'WEAPON ACQUIRED'; banner.timer = 1.5;
+      }
+      if(currentStage===2){
+        stage2WeaponCollected = true;
+        spawnTimer = 1.0; // Enemy spawnlamayı başlat
+        banner.text = 'SHOTGUN ACQUIRED'; banner.timer = 1.5;
+      }
+      weaponPickups.splice(i,1);
+      playSFX(SFX.heal, 0.6); // Pickup sesi
+    }
+  }
+
   // ----- spawn -----
   // Ana menüde arka planda gösteri yapıldığı için en baştan çok kalabalık
   // ve çok hızlı spawn olur. Gerçek oyunda ise kill sayısı arttıkça
@@ -1563,6 +1599,11 @@ function update(dt){
   }
 
   if(spawnTimer <= 0 && enemies.length < spawnCap){
+    // Stage 1'de silah alınmadan enemy spawnlama
+    if(currentStage===1 && !stageWeaponCollected) return;
+    // Stage 2'de shotgun alınmadan enemy spawnlama
+    if(currentStage===2 && !stage2WeaponCollected) return;
+    
     spawnEnemy();
     spawnTimer = spawnInterval;
     waveDifficulty += 0.05;
@@ -2181,6 +2222,39 @@ function render(){
   // --- corpses are always on the back layer ---
   for(const piece of corpsePieces) drawCorpsePiece(piece);
 
+  // --- weapon pickups ---
+  for(const wp of weaponPickups){
+    const sx = wp.x - camera.x, sy = wp.y - camera.y;
+    const bobY = Math.sin(wp.bobOffset) * 5;
+    
+    ctx.save();
+    ctx.translate(sx, sy + bobY);
+    
+    // Glow effect
+    ctx.shadowColor = '#ffdd33';
+    ctx.shadowBlur = 15;
+    
+    // Weapon icon
+    const weaponImg = wp.type === 'shotgun' ? IMG.shotgun : IMG.gun;
+    if(weaponImg.loaded){
+      ctx.drawImage(weaponImg, -20, -20, 40, 40);
+    } else {
+      ctx.fillStyle = wp.type === 'shotgun' ? '#ff6600' : '#00ff00';
+      ctx.beginPath();
+      ctx.arc(0, 0, 15, 0, Math.PI*2);
+      ctx.fill();
+    }
+    
+    // Pick up text
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(wp.type === 'shotgun' ? 'SHOTGUN' : 'GUN', 0, -25);
+    
+    ctx.restore();
+  }
+
   // --- sort world objects by y for simple depth ordering ---
   const drawables = [];
   for(const e of enemies) drawables.push({y:e.y, draw:()=>drawEnemy(e)});
@@ -2617,6 +2691,9 @@ function restartGame(){
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
   weapon = 'gun'; // every level starts back on weapon 1
+  weaponPickups = [];
+  stageWeaponCollected = false;
+  stage2WeaponCollected = false;
   nextBossThreshold = 100; bossEnemyRef = null; stageMutationTriggered=false; stage1Finished=false; bossActive = false;
   stage2BossTriggered = false; stage2BossFinished = false; cubeV2Ref = null; cubeBullets = [];
   cubeCloneSpawnTimer = -1; cubeClonesSpawned = false;
@@ -2706,6 +2783,21 @@ function launchStage(n){
   playWakeUpEffect();
   if(n!==3){
     tryPlayMusic(currentGameMusic(), () => gameStarted && playingReal);
+  }
+
+  // Stage 1: Silah pickup spawn et, enemy spawnlama engelle
+  if(n===1){
+    weaponPickups = [];
+    stageWeaponCollected = false;
+    // Oyuncunun önüne silah koy
+    spawnWeaponPickup('gun', player.x, player.y - 100);
+  }
+  // Stage 2: Shotgun pickup spawn et
+  if(n===2){
+    weaponPickups = [];
+    stage2WeaponCollected = false;
+    // Oyuncunun önüne shotgun koy
+    spawnWeaponPickup('shotgun', player.x, player.y - 100);
   }
 }
 document.getElementById('stage1Card').onclick=()=>launchStage(1);
