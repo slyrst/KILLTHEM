@@ -319,6 +319,7 @@ function loadImg(path){
 
 const IMG = {
   map:    loadImg('images/Map.png'),
+  map2:   loadImg('images/map2.png'),
   nice:   loadImg('images/nice.png'),
   mid:    loadImg('images/mid.png'),
   angry:  loadImg('images/angry.png'),
@@ -394,8 +395,8 @@ function drawRotatedImage(img, x, y, w, h, rot, placeholderColor, placeholderLab
 // (so there's real WASD-scrollable space) and the map image is stretched
 // to exactly cover the world bounds - no black gaps, ever.
 const WORLD = { w: 3200, h: 2200 };
-function fitWorldToMap(){
-  const nw = IMG.map.naturalWidth, nh = IMG.map.naturalHeight;
+function fitWorldToMapImg(img){
+  const nw = img.naturalWidth, nh = img.naturalHeight;
   if(nw < 10 || nh < 10) return;
   // minimum world size: at least ~2.5x the current viewport in both axes
   const minW = canvas.width * 2.5;
@@ -407,9 +408,17 @@ function fitWorldToMap(){
   player.x = WORLD.w / 2;
   player.y = WORLD.h / 2;
 }
+// Stage 1 uses Map.png, Stage 2 uses map2.png.
+function currentMapImg(){
+  return currentStage === 2 ? IMG.map2 : IMG.map;
+}
 IMG.map.onload = () => {
   IMG.map.loaded = true;
-  fitWorldToMap();
+  if(currentStage === 1) fitWorldToMapImg(IMG.map);
+};
+IMG.map2.onload = () => {
+  IMG.map2.loaded = true;
+  if(currentStage === 2) fitWorldToMapImg(IMG.map2);
 };
 
 const camera = { x: 0, y: 0 };
@@ -530,13 +539,13 @@ function togglePause(){
   } else {
     paused = true;
     document.getElementById('pauseScreen').classList.add('show');
-    musicGame.pause();
+    currentGameMusic().pause();
   }
 }
 function resumeGame(){
   paused = false;
   document.getElementById('pauseScreen').classList.remove('show');
-  if(playingReal) tryPlayMusic(musicGame, () => playingReal && !paused);
+  if(playingReal) tryPlayMusic(currentGameMusic(), () => playingReal && !paused);
 }
 
 // LEAVE -> back to the main menu, bot takes back over.
@@ -553,6 +562,8 @@ document.getElementById('stayBtn').addEventListener('click', () => {
 function backToMainMenu(){
   musicGame.pause();
   musicGame.currentTime = 0;
+  musicGame2.pause();
+  musicGame2.currentTime = 0;
   gameStarted = false;
   tryPlayMusic(musicElevator, () => !gameStarted);
 
@@ -1207,7 +1218,7 @@ function update(dt){
   if(!autoPilot && currentStage===1 && !stageMutationTriggered && player.totalKills >= 100){
     triggerStage1Mutation();
   }
-  if(!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished && player.totalKills >= 110){
+  if(!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished && enemies.length === 0){
     finishStage1();
   }
   if(stageTransitionTimer>0){
@@ -1219,6 +1230,8 @@ function update(dt){
       player.totalKills=0; player.killStreak=0;
       enemies=[]; bullets=[]; orbs=[];
       banner.text='STAGE 2'; banner.timer=2;
+      if(IMG.map2.loaded) fitWorldToMapImg(IMG.map2);
+      switchToStage2Music();
     }
   }
 
@@ -1231,9 +1244,15 @@ function update(dt){
   spawnTimer -= dt;
 
   let spawnCap, spawnInterval;
+  // After the Stage 1 global mutation fires, no more reinforcements spawn -
+  // every enemy still alive at that moment has to be cleared to finish the stage.
+  const stage1LastStand = (!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished);
   if(autoPilot){
     spawnCap = 100 + waveDifficulty;
     spawnInterval = Math.max(0.08, 0.35 - waveDifficulty*0.01);
+  } else if(stage1LastStand){
+    spawnCap = 0;
+    spawnInterval = 999;
   } else {
     const kills = player.totalKills;
     if(kills >= 300){
@@ -1531,13 +1550,14 @@ function render(){
   ctx.save();
   ctx.translate(shakeX, shakeY);
 
-  // --- map (offset by camera) ---
-  if(IMG.map.loaded){
+  // --- map (offset by camera) - Stage 1 -> Map.png, Stage 2 -> map2.png ---
+  const mapImg = currentMapImg();
+  if(mapImg.loaded){
     // stretched to exactly cover the world bounds, offset by camera
-    // Integer camera coordinates + smoothing off keeps Map.png crisp while stretched.
+    // Integer camera coordinates + smoothing off keeps map art crisp while stretched.
     const mapX = -Math.round(camera.x);
     const mapY = -Math.round(camera.y);
-    ctx.drawImage(IMG.map, mapX, mapY, Math.round(WORLD.w), Math.round(WORLD.h));
+    ctx.drawImage(mapImg, mapX, mapY, Math.round(WORLD.w), Math.round(WORLD.h));
   } else {
     ctx.fillStyle = '#25321f';
     ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -1551,7 +1571,8 @@ function render(){
     }
     ctx.fillStyle='rgba(255,255,255,.35)';
     ctx.font='bold 13px Arial';
-    ctx.fillText('images/Map.png not found - showing placeholder ground', 16, canvas.height-16);
+    const missingName = currentStage===2 ? 'images/map2.png' : 'images/Map.png';
+    ctx.fillText(missingName+' not found - showing placeholder ground', 16, canvas.height-16);
   }
 
   // --- corpses are always on the back layer ---
@@ -1889,7 +1910,7 @@ sfxVolumeInput.value=Math.round(masterSfxVolume*100);
 document.getElementById('settingsBtn').onclick=()=>settingsScreen.classList.add('show');
 document.getElementById('closeSettingsBtn').onclick=()=>settingsScreen.classList.remove('show');
 parryVolumeInput.oninput=()=>{parryVolume=parryVolumeInput.value/100;localStorage.setItem('kt_parry_volume',parryVolume);};
-musicVolumeInput.oninput=()=>{musicVolume=musicVolumeInput.value/100;musicElevator.volume=musicVolume;musicGame.volume=musicVolume;localStorage.setItem('kt_music_volume',musicVolume);};
+musicVolumeInput.oninput=()=>{musicVolume=musicVolumeInput.value/100;musicElevator.volume=musicVolume;musicGame.volume=musicVolume;musicGame2.volume=musicVolume;localStorage.setItem('kt_music_volume',musicVolume);};
 sfxVolumeInput.oninput=()=>{masterSfxVolume=sfxVolumeInput.value/100;localStorage.setItem('kt_sfx_volume',masterSfxVolume);};
 
 // ---------- STAGE SELECT ----------
@@ -1918,6 +1939,23 @@ musicElevator.volume = musicVolume;
 const musicGame = new Audio('musics/game.mp3');
 musicGame.loop = true;
 musicGame.volume = musicVolume;
+
+// Stage 2's own background track.
+const musicGame2 = new Audio('musics/game2.mp3');
+musicGame2.loop = true;
+musicGame2.volume = musicVolume;
+
+// Returns whichever gameplay track belongs to the stage currently being played.
+function currentGameMusic(){
+  return currentStage === 2 ? musicGame2 : musicGame;
+}
+// Stops stage 1's track and starts stage 2's, used on the automatic
+// stage1 -> stage2 transition mid-run.
+function switchToStage2Music(){
+  musicGame.pause();
+  musicGame.currentTime = 0;
+  tryPlayMusic(musicGame2, () => playingReal && currentStage===2 && !paused);
+}
 
 // Once true, elevator.mp3 must never play again (menu-only track).
 let gameStarted = false;
@@ -1992,9 +2030,11 @@ document.getElementById('enterBtn').addEventListener('click', () => {
     autoPilot = false;
     playingReal = true;
     document.getElementById('ui').style.display = '';
+    const mapImg = currentMapImg();
+    if(mapImg.loaded) fitWorldToMapImg(mapImg);
     restartGame();
     playWakeUpEffect();
-    tryPlayMusic(musicGame, () => gameStarted);
+    tryPlayMusic(currentGameMusic(), () => gameStarted && playingReal);
   }, 550);
 });
 
