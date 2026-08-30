@@ -597,6 +597,7 @@ window.addEventListener('mouseup', () => mouseDown = false);
 // main menu demo, not the stages intro screen.
 function togglePause(){
   if(!playingReal || !player.alive) return;
+  if(cubeDialogueActive) return; // Diyalog sırasında pause yapma
   if(paused){
     resumeGame();
   } else {
@@ -611,7 +612,10 @@ function resumeGame(){
   document.getElementById('pauseScreen').classList.remove('show');
   if(playingReal){
     tryPlayMusic(currentGameMusic(), () => playingReal && !paused);
-    tryPlayMusic(divineMusic, () => playingReal && !paused && cubeDialogueDone);
+    // Divine müzik sadece boss fight sırasında çalmalı
+    if((currentStage===2 && stage2BossTriggered && !stage2BossFinished) || currentStage===3){
+      tryPlayMusic(divineMusic, () => playingReal && !paused && cubeDialogueDone);
+    }
   }
 }
 
