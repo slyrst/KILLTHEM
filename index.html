@@ -221,6 +221,16 @@
   opacity:0;
   pointer-events:none;
 }
+#cubeDialogue{
+  position:fixed;left:50%;bottom:42px;transform:translateX(-50%);
+  width:min(900px,88vw);z-index:95;display:none;
+  text-align:center;color:#fff;pointer-events:none;
+  text-shadow:0 3px 5px #000,0 0 12px #000;
+}
+#cubeDialogue.show{display:block;}
+#cubeSpeaker{font-size:18px;font-weight:900;letter-spacing:3px;margin-bottom:8px;}
+#cubeSubtitle{font-size:26px;font-weight:700;line-height:1.35;min-height:36px;}
+#cubeDialogue.silence #cubeSubtitle{opacity:0;}
 </style>
 </head>
 <body>
@@ -292,6 +302,10 @@
   </div>
 </div>
 <div id="wakeOverlay"></div>
+<div id="cubeDialogue" aria-live="polite">
+  <div id="cubeSpeaker">CUBE:</div>
+  <div id="cubeSubtitle"></div>
+</div>
 <div id="stageCompleteScreen">
   <h1 id="stageCompleteTitle">STAGE COMPLETE</h1>
   <p id="stageCompleteStats"></p>
@@ -577,6 +591,10 @@ document.getElementById('stayBtn').addEventListener('click', () => {
 });
 
 function backToMainMenu(){
+  cubeDialogueActive=false;
+  cubeDialogueDone=false;
+  document.getElementById('cubeDialogue').classList.remove('show','silence');
+  stopDivine();
   musicGame.pause();
   musicGame.currentTime = 0;
   musicGame2.pause();
@@ -602,6 +620,29 @@ function backToMainMenu(){
 
 function tryParry(){
   if(!player.alive || parryCooldown > 0) return;
+
+  // Knight sword: parry the thrown sword. Knights do NOT reflect yellow orbs.
+  let swordParried = false;
+  const swordParryRange = 110 * DIFF.parryRangeMult;
+  for(const sp of swordProjectiles){
+    if(sp.parried) continue;
+    if(dist(sp.x,sp.y,player.x,player.y) <= swordParryRange){
+      const mw = mouseWorld();
+      const aim = Math.atan2(mw.y-player.y, mw.x-player.x);
+      const speed = Math.max(1100, Math.hypot(sp.vx,sp.vy)*1.25);
+      sp.x = player.x; sp.y = player.y;
+      sp.vx = Math.cos(aim)*speed;
+      sp.vy = Math.sin(aim)*speed;
+      sp.angle = aim;
+      sp.owner = 'player';
+      sp.parried = true;
+      sp.dmg = 110 * DIFF.playerDmgMult;
+      swordParried = true;
+      lastParriedOrbPos = {x:sp.x,y:sp.y};
+      player.hp = player.maxHp;
+      spawnExplosion(sp.x,sp.y,0.65);
+    }
+  }
 
   // Shotgun mermisini parryleyince mermi kaybolmaz: bulunduğu yerde patlar ve düz devam eden 2x hasarlı patlayıcı mermi olur.
   let shotgunParried = false;
@@ -629,6 +670,19 @@ function tryParry(){
 
   let parried = false;
   const range = 88 * DIFF.parryRangeMult;
+
+  // Knight thrown swords
+  for(const sp of swordProjectiles){
+    const sx=sp.x-camera.x, sy=sp.y-camera.y;
+    ctx.save();
+    ctx.translate(sx,sy);
+    ctx.rotate(sp.angle||0);
+    ctx.shadowColor=sp.parried?'#fff06a':'#e8f4ff';
+    ctx.shadowBlur=sp.parried?22:14;
+    if(IMG.sword.loaded) ctx.drawImage(IMG.sword,-34,-10,68,20);
+    else {ctx.fillStyle=sp.parried?'#fff06a':'#dce8f2';ctx.fillRect(-34,-5,68,10);}
+    ctx.restore();
+  }
 
   for(const o of orbs){
     if(o.parried) continue;
@@ -699,7 +753,7 @@ function tryParry(){
   // gets a tiny cooldown, just long enough to stop one press registering
   // twice in the same frame - short enough that fast, back-to-back orbs
   // (like the boss's 5-orb burst) can each still be parried in turn.
-  if(parried || shotgunParried){
+  if(parried || shotgunParried || swordParried){
     parryCooldown = 0.08;
     if(!autoPilot) playSFX(SFX.parry, parryVolume);
   }
@@ -833,6 +887,7 @@ function updateAutoPilot(dt){
 
 // ---------- BULLETS (player) ----------
 let bullets = [];
+let swordProjectiles = [];
 function shoot(){
   if(player.fireCooldown > 0 || !player.alive) return;
   const mw = mouseWorld();
@@ -918,6 +973,9 @@ function spawnEnemy(){
       state:'chase', stateTimer:0, dmg: 24,
       dashFrom:{x:0,y:0}, dashTo:{x:0,y:0}, retreatDir:{x:0,y:0},
       hitCooldown:0, parryFlash:0,
+      swordTimer:0.9 + Math.random()*0.8,
+      swordCooldown:0, swordSwing:0,
+      swordAngle:0,
     });
   }
 }
@@ -1046,6 +1104,7 @@ let lastTime = performance.now();
 let banner = { text:'', timer:0 };
 
 function update(dt){
+  updateCubeDialogue(dt);
   // Ölüm efektleri oyun dururken de çalışır.
   for(let i=explosions.length-1;i>=0;i--){
     explosions[i].timer -= dt;
@@ -1116,6 +1175,9 @@ function update(dt){
 
   if(!player.alive) return;
 
+  // Cinematic dialogue freezes combat, while the dialogue itself continues.
+  if(cubeDialogueActive) return;
+
   // ----- player movement -----
   let mv = {x:0,y:0};
   if(autoPilot){
@@ -1169,7 +1231,7 @@ function update(dt){
         // Cube V2 (while its deflect phase is up) and a Knight with its
         // sword raised knock the bullet straight back at the player as a
         // parryable hazard orb, instead of taking damage from it.
-        if(!autoPilot && !b.explosive && ((e.type==='cubev2' && e.deflectActive) || (e.type==='knight' && e.parryFlash>0))){
+        if(!autoPilot && !b.explosive && e.type==='cubev2' && e.deflectActive){
           const backAng = Math.atan2(player.y-e.y, player.x-e.x);
           orbs.push({x:e.x,y:e.y,vx:Math.cos(backAng)*820,vy:Math.sin(backAng)*820, dmg: Math.max(14, b.dmg*1.2)});
           bullets.splice(i,1);
@@ -1203,6 +1265,43 @@ function update(dt){
           }
         }
         break;
+      }
+    }
+  }
+
+  // ----- knight sword projectiles -----
+  for(let i=swordProjectiles.length-1;i>=0;i--){
+    const sp = swordProjectiles[i];
+    sp.life -= dt;
+    sp.x += sp.vx*dt;
+    sp.y += sp.vy*dt;
+    sp.angle = Math.atan2(sp.vy,sp.vx);
+
+    if(sp.life <= 0 || sp.x<=0 || sp.y<=0 || sp.x>=WORLD.w || sp.y>=WORLD.h){
+      swordProjectiles.splice(i,1);
+      continue;
+    }
+
+    if(!sp.parried && sp.owner==='knight' &&
+       player.invuln<=0 && dist(sp.x,sp.y,player.x,player.y) < player.radius+18){
+      damagePlayer(sp.dmg);
+      spawnExplosion(sp.x,sp.y,0.55);
+      swordProjectiles.splice(i,1);
+      continue;
+    }
+
+    if(sp.parried && sp.owner==='player'){
+      for(let j=enemies.length-1;j>=0;j--){
+        const e=enemies[j];
+        if(e.mutating) continue;
+        if(dist(sp.x,sp.y,e.x,e.y) < e.radius+24){
+          e.hp -= sp.dmg;
+          e.hitFlash = 0.22;
+          spawnExplosion(e.x,e.y,0.9);
+          swordProjectiles.splice(i,1);
+          if(e.hp<=0 && registerKill(e,true)) enemies.splice(j,1);
+          break;
+        }
       }
     }
   }
@@ -1404,62 +1503,65 @@ function updateGreen(e, dt){
 // the player as a hazard orb instead of just damaging it.
 function updateKnight(e, dt){
   if(e.hitCooldown>0) e.hitCooldown -= dt;
-  if(e.parryFlash>0) e.parryFlash -= dt;
+  if(e.swordCooldown>0) e.swordCooldown -= dt;
+  if(e.swordSwing>0) e.swordSwing -= dt;
 
   const d = dist(e.x,e.y,player.x,player.y);
 
   if(e.state === 'chase'){
-    if(d > 70){
+    if(d > 230){
       const ang = Math.atan2(player.y-e.y, player.x-e.x);
       e.x += Math.cos(ang)*e.speed*dt;
       e.y += Math.sin(ang)*e.speed*dt;
     }
 
-    // occasionally raises its sword to try to deflect an incoming shot
-    if(e.parryFlash<=0){
-      for(const b of bullets){
-        if(dist(b.x,b.y,e.x,e.y) < 140 && Math.random()<0.03){
-          e.parryFlash = 0.24;
-          break;
-        }
-      }
+    if(d < 300 && e.swordCooldown <= 0){
+      e.state = 'sword_windup';
+      e.stateTimer = 0.48;
+      e.swordAngle = Math.atan2(player.y-e.y, player.x-e.x);
+      e.swordSwing = 0.48;
     }
 
-    if(d < 110){
-      e.state = 'telegraph';
-      e.stateTimer = 0.38;
-    }
     if(d < e.radius + player.radius && player.invuln<=0 && e.hitCooldown<=0){
       damagePlayer(10);
       e.hitCooldown = 0.7;
     }
-  } else if(e.state === 'telegraph'){
+
+  } else if(e.state === 'sword_windup'){
     e.stateTimer -= dt;
+    const desired = Math.atan2(player.y-e.y, player.x-e.x);
+    let diff = Math.atan2(Math.sin(desired-e.swordAngle), Math.cos(desired-e.swordAngle));
+    e.swordAngle += diff * Math.min(1,dt*5);
+
     if(e.stateTimer <= 0){
-      e.state = 'dash';
-      e.stateTimer = 0.2;
-      e.dashFrom = {x:e.x,y:e.y};
-      e.dashTo = {x:player.x,y:player.y};
+      e.state = 'sword_throw';
+      e.stateTimer = 0.18;
+      const ang = e.swordAngle;
+      const speed = 980;
+      swordProjectiles.push({
+        x:e.x + Math.cos(ang)*(e.radius+24),
+        y:e.y + Math.sin(ang)*(e.radius+24),
+        vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed,
+        dmg:32, owner:'knight', parried:false, life:3.0, angle:ang
+      });
+      e.swordCooldown = 1.15;
+      spawnExplosion(e.x + Math.cos(ang)*(e.radius+20),
+                     e.y + Math.sin(ang)*(e.radius+20), 0.35);
     }
-  } else if(e.state === 'dash'){
+
+  } else if(e.state === 'sword_throw'){
     e.stateTimer -= dt;
-    const t = 1 - Math.max(0,e.stateTimer)/0.2;
-    e.x = e.dashFrom.x + (e.dashTo.x - e.dashFrom.x)*t;
-    e.y = e.dashFrom.y + (e.dashTo.y - e.dashFrom.y)*t;
-    if(dist(e.x,e.y,player.x,player.y) < e.radius + player.radius && player.invuln<=0 && e.hitCooldown<=0){
-      damagePlayer(e.dmg);
-      e.hitCooldown = 1.0;
-    }
     if(e.stateTimer <= 0){
       e.state = 'retreat';
-      e.stateTimer = 0.32;
+      e.stateTimer = 0.34;
       const backAng = Math.atan2(e.y-player.y, e.x-player.x);
       e.retreatDir = {x:Math.cos(backAng), y:Math.sin(backAng)};
     }
+
   } else if(e.state === 'retreat'){
     e.stateTimer -= dt;
-    e.x += e.retreatDir.x * e.speed * 1.6 * dt;
-    e.y += e.retreatDir.y * e.speed * 1.6 * dt;
+    e.x += e.retreatDir.x * e.speed * 1.8 * dt;
+    e.y += e.retreatDir.y * e.speed * 1.8 * dt;
     if(e.stateTimer <= 0){
       e.state = 'chase';
       e.stateTimer = 0;
@@ -1508,6 +1610,10 @@ function triggerCubeV2(){
   bossPulse.timer = e.growDuration;
   bossPulse.duration = e.growDuration;
   bossPulse.x = e.x; bossPulse.y = e.y;
+
+  setTimeout(() => {
+    if(cubeV2Ref===e && player.alive && currentStage===2) startCubeDialogue();
+  }, 900);
 }
 
 function cubeV2OrbBurst(e){
@@ -1749,6 +1855,10 @@ function damagePlayer(amount){
   if(player.hp <= 0){
     player.hp = 0;
     player.alive = false;
+    cubeDialogueActive=false;
+    document.getElementById('cubeDialogue').classList.remove('show','silence');
+    currentGameMusic().pause();
+    stopDivine();
     spawnDeathPieces();
     showDeathScreen();
   }
@@ -2049,50 +2159,46 @@ function drawPlayer(){
 
 function drawKnightEnemy(e, sx, sy){
   const size = e.radius*2 + 14;
-
-  // base art faces LEFT by default; flip when it should face right.
-  let faceAng;
-  if(e.state === 'dash') faceAng = Math.atan2(e.dashTo.y-e.dashFrom.y, e.dashTo.x-e.dashFrom.x);
-  else faceAng = Math.atan2(player.y-e.y, player.x-e.x);
-  const facingRight = Math.cos(faceAng) >= 0;
-
-  let flash = 0;
-  if(e.state === 'telegraph') flash = 0.5 + 0.5*Math.sin(performance.now()/40);
+  let faceAng = Math.atan2(player.y-e.y, player.x-e.x);
+  if(e.state==='sword_windup' || e.state==='sword_throw') faceAng=e.swordAngle||faceAng;
+  const facingRight = Math.cos(faceAng)>=0;
 
   ctx.save();
-  ctx.translate(sx, sy);
-  if(facingRight) ctx.scale(-1, 1);
-  if(flash > 0){ ctx.shadowColor = '#ff2222'; ctx.shadowBlur = 18*flash; }
-  if(IMG.knight.loaded){
-    ctx.drawImage(IMG.knight, -size/2, -size/2, size, size);
-  } else {
-    drawPlaceholder(0, 0, size, size, '#8899aa', 'KNIGHT', 0);
+  ctx.translate(sx,sy);
+  if(facingRight) ctx.scale(-1,1);
+
+  if(e.state==='sword_windup'){
+    const flash = 0.5+0.5*Math.sin(performance.now()/45);
+    ctx.shadowColor='#ff3333'; ctx.shadowBlur=22*flash;
   }
-  // sword held out in front (toward the facing side)
-  const swordSize = size*0.62;
-  if(IMG.sword.loaded){
-    ctx.drawImage(IMG.sword, size*0.06, -swordSize*0.5, swordSize, swordSize);
+  if(IMG.knight.loaded) ctx.drawImage(IMG.knight,-size/2,-size/2,size,size);
+  else drawPlaceholder(0,0,size,size,'#8899aa','KNIGHT',0);
+
+  // Weapon is visibly held and swung, then disappears from the hand on throw.
+  if(e.state!=='sword_throw'){
+    const swordSize=size*0.78;
+    let handAngle=0.05;
+    if(e.state==='sword_windup'){
+      const p=clamp(1-e.stateTimer/0.48,0,1);
+      handAngle=-1.25+p*0.25;
+    } else {
+      handAngle=Math.sin(performance.now()/220)*0.08;
+    }
+    if(IMG.sword.loaded){
+      ctx.save();
+      ctx.translate(size*0.16,0);
+      ctx.rotate(handAngle);
+      ctx.drawImage(IMG.sword,-swordSize*0.08,-swordSize*0.5,swordSize,swordSize);
+      ctx.restore();
+    }
   }
   ctx.restore();
 
-  // shield-up glint = about to deflect a shot
-  if(e.parryFlash > 0){
+  if(e.hitFlash>0){
     ctx.save();
-    ctx.globalAlpha = Math.min(1, e.parryFlash/0.24);
-    ctx.strokeStyle = '#bfe8ff';
-    ctx.lineWidth = 4;
-    ctx.shadowColor = '#bfe8ff'; ctx.shadowBlur = 16;
-    ctx.beginPath();
-    ctx.arc(sx, sy, e.radius+14, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  if(e.hitFlash > 0){
-    ctx.save();
-    ctx.globalAlpha = Math.min(0.6, e.hitFlash/0.16);
-    ctx.fillStyle = '#ff2222';
-    ctx.beginPath(); ctx.arc(sx, sy, size/2, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha=Math.min(0.6,e.hitFlash/0.16);
+    ctx.fillStyle='#ff2222';
+    ctx.beginPath();ctx.arc(sx,sy,size/2,0,Math.PI*2);ctx.fill();
     ctx.restore();
   }
 }
@@ -2199,12 +2305,19 @@ function showDeathScreen(){
 }
 
 function restartGame(){
+  cubeDialogueActive=false;
+  cubeDialogueDone=false;
+  cubeDialogueIndex=-1;
+  document.getElementById('cubeDialogue').classList.remove('show','silence');
+  document.getElementById('cubeSubtitle').textContent='';
+  stopDivine();
+
   player.x = WORLD.w/2; player.y = WORLD.h/2;
   player.hp = player.maxHp;
   player.alive = true;
   player.killStreak = 0; player.totalKills = 0;
   player.dashCooldown = 0; player.dashing = false; player.invuln = 0;
-  enemies = []; bullets = []; orbs = []; explosions = []; deathPieces = []; corpsePieces = [];
+  enemies = []; bullets = []; swordProjectiles = []; orbs = []; explosions = []; deathPieces = []; corpsePieces = [];
   lastParriedOrbPos = null; parryPulse.active = false;
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
@@ -2231,7 +2344,7 @@ sfxVolumeInput.value=Math.round(masterSfxVolume*100);
 document.getElementById('settingsBtn').onclick=()=>settingsScreen.classList.add('show');
 document.getElementById('closeSettingsBtn').onclick=()=>settingsScreen.classList.remove('show');
 parryVolumeInput.oninput=()=>{parryVolume=parryVolumeInput.value/100;localStorage.setItem('kt_parry_volume',parryVolume);};
-musicVolumeInput.oninput=()=>{musicVolume=musicVolumeInput.value/100;musicElevator.volume=musicVolume;musicGame.volume=musicVolume;musicGame2.volume=musicVolume;localStorage.setItem('kt_music_volume',musicVolume);};
+musicVolumeInput.oninput=()=>{musicVolume=musicVolumeInput.value/100;musicElevator.volume=musicVolume;musicGame.volume=musicVolume;musicGame2.volume=musicVolume;divineMusic.volume=musicVolume;localStorage.setItem('kt_music_volume',musicVolume);};
 sfxVolumeInput.oninput=()=>{masterSfxVolume=sfxVolumeInput.value/100;localStorage.setItem('kt_sfx_volume',masterSfxVolume);};
 
 // ---------- STAGE SELECT ----------
@@ -2396,6 +2509,85 @@ musicGame.volume = musicVolume;
 const musicGame2 = new Audio('musics/game2.mp3');
 musicGame2.loop = true;
 musicGame2.volume = musicVolume;
+
+// ---------- CUBE V2 DIALOGUE ----------
+const divineMusic = new Audio('musics/Divine.mp3');
+divineMusic.loop = false;
+divineMusic.volume = musicVolume;
+
+let cubeDialogueActive = false;
+let cubeDialogueIndex = -1;
+let cubeDialogueTimer = 0;
+let cubeDialogueDone = false;
+
+const CUBE_DIALOGUE = [
+  {text:'Hello Cube', duration:1.7, silence:0.15},
+  {text:'You made it this far…', duration:2.2, silence:0.35},
+  {text:'You think that means you’re strong?', duration:2.5, silence:0.35},
+  {text:'No.', duration:1.6, silence:0.65},
+  {text:'It means I allowed you to.', duration:2.4, silence:0.45},
+  {text:'', duration:1.1, silence:1.0},
+  {text:'YOU WILL DIE TO ME.', duration:2.0, silence:0, divine:true}
+];
+
+function stopDivine(){
+  divineMusic.pause();
+  divineMusic.currentTime=0;
+}
+
+function startCubeDialogue(){
+  if(cubeDialogueActive || cubeDialogueDone) return;
+  cubeDialogueActive=true;
+  cubeDialogueDone=false;
+  cubeDialogueIndex=-1;
+  cubeDialogueTimer=0.75;
+
+  const box=document.getElementById('cubeDialogue');
+  box.classList.add('show','silence');
+  document.getElementById('cubeSpeaker').textContent='CUBE:';
+  document.getElementById('cubeSubtitle').textContent='';
+
+  // Music ducks hard during the speech/silence.
+  currentGameMusic().volume=0.10*musicVolume;
+}
+
+function finishCubeDialogue(){
+  cubeDialogueActive=false;
+  cubeDialogueDone=true;
+  cubeDialogueIndex=-1;
+  document.getElementById('cubeDialogue').classList.remove('show','silence');
+  document.getElementById('cubeSubtitle').textContent='';
+  // Divine is intentionally allowed to continue after the speech.
+  if(!divineMusic.paused) currentGameMusic().volume=0;
+  else currentGameMusic().volume=musicVolume;
+}
+
+function updateCubeDialogue(dt){
+  if(!cubeDialogueActive) return;
+  cubeDialogueTimer-=dt;
+  if(cubeDialogueTimer>0) return;
+
+  cubeDialogueIndex++;
+  if(cubeDialogueIndex>=CUBE_DIALOGUE.length){
+    finishCubeDialogue();
+    return;
+  }
+
+  const line=CUBE_DIALOGUE[cubeDialogueIndex];
+  const box=document.getElementById('cubeDialogue');
+  document.getElementById('cubeSubtitle').textContent=line.text;
+  box.classList.toggle('silence',!line.text);
+
+  if(line.divine){
+    currentGameMusic().pause();
+    currentGameMusic().volume=0;
+    divineMusic.currentTime=0;
+    divineMusic.volume=musicVolume;
+    divineMusic.play().catch(()=>{});
+  }
+
+  cubeDialogueTimer=line.duration+line.silence;
+}
 
 // Returns whichever gameplay track belongs to the stage currently being played.
 function currentGameMusic(){
