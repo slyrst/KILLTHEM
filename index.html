@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -495,7 +495,7 @@ function dist(ax,ay,bx,by){ return Math.hypot(ax-bx, ay-by); }
 const keys = {};
 let mouseScreen = { x: 0, y: 0 };
 let mouseDown = false;
-let weapon = 'gun';
+let weapon = null; // Silah alınmadıysa null
 let parryCooldown = 0;
 let parryPulseTimer = 0;
 let parryPulse = { x: 0, y: 0, active: false };
@@ -517,6 +517,9 @@ let botWeaponTimer = 5;
 let botStrafeDir = 1;
 let botStrafeTimer = 2;
 let botMoveX = 0, botMoveY = 0; // smoothed movement vector, avoids jittery direction snaps
+// Ana menüde arkaplanda dövüşen bot en baştan silahlı olsun (gerçek stage'e
+// girildiğinde restartGame() bunu autoPilot durumuna göre zaten sıfırlıyor).
+weapon = 'gun';
 
 // ---------- DIFFICULTY ----------
 // easy: boss/entity HP halved, our damage doubled, parry MUCH more forgiving.
@@ -576,8 +579,8 @@ let cubeClonesSpawned = false;
 window.addEventListener('keydown', e => {
   if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
   if(e.key === 'Escape'){ togglePause(); return; }
-  if(e.key === '1') weapon='gun';
-  if(e.key === '2') weapon='shotgun';
+  if(e.key === '1' && weapon !== null) weapon='gun';
+  if(e.key === '2' && weapon !== null) weapon='shotgun';
   keys[e.key.toLowerCase()] = true;
   if(e.key.toLowerCase() === 'q') tryDash();
   if(e.key.toLowerCase() === 'f' && !e.repeat) tryParry();
@@ -927,7 +930,7 @@ function updateAutoPilot(dt){
 
   // shooting
   botFireTimer -= dt;
-  if(target && botFireTimer <= 0){
+  if(target && botFireTimer <= 0 && weapon !== null){
     shoot();
     botFireTimer = weapon==='shotgun' ? 0.86 : 0.35;
   }
@@ -941,7 +944,7 @@ function updateAutoPilot(dt){
 
   // occasionally swap weapons just to show both off
   botWeaponTimer -= dt;
-  if(botWeaponTimer <= 0){
+  if(botWeaponTimer <= 0 && weapon !== null){
     weapon = weapon === 'gun' ? 'shotgun' : 'gun';
     botWeaponTimer = 4 + Math.random()*4;
   }
@@ -967,6 +970,7 @@ function spawnWeaponPickup(type, x, y){
 }
 function shoot(){
   if(player.fireCooldown > 0 || !player.alive) return;
+  if(!weapon) return; // Silah yoksa ateş edemez
   const mw = mouseWorld();
   const ang = Math.atan2(mw.y - player.y, mw.x - player.x);
   const muzzleDist = player.radius + 18;
@@ -1549,11 +1553,13 @@ function update(dt){
         stageWeaponCollected = true;
         spawnTimer = 1.0; // Enemy spawnlamayı başlat
         banner.text = 'WEAPON ACQUIRED'; banner.timer = 1.5;
+        localStorage.setItem('kt_has_gun','1');
       }
       if(currentStage===2){
         stage2WeaponCollected = true;
         spawnTimer = 1.0; // Enemy spawnlamayı başlat
         banner.text = 'SHOTGUN ACQUIRED'; banner.timer = 1.5;
+        localStorage.setItem('kt_has_shotgun','1');
       }
       weaponPickups.splice(i,1);
       playSFX(SFX.heal, 0.6); // Pickup sesi
@@ -2494,8 +2500,10 @@ function drawPlayer(){
   const gx = sx + Math.cos(aimAngle) * gunDist;
   const gy = sy + Math.sin(aimAngle) * gunDist;
   const gunAngle = aimAngle + GUN_ART_OFFSET;
-  const weaponImg = weapon==='shotgun' ? IMG.shotgun : IMG.gun;
-  drawRotatedImage(weaponImg, gx, gy, weapon==='shotgun'?58:46, weapon==='shotgun'?58:46, gunAngle, '#888888', weapon==='shotgun'?'SHOTGUN':'GUN');
+  if(weapon !== null){
+    const weaponImg = weapon==='shotgun' ? IMG.shotgun : IMG.gun;
+    drawRotatedImage(weaponImg, gx, gy, weapon==='shotgun'?58:46, weapon==='shotgun'?58:46, gunAngle, '#888888', weapon==='shotgun'?'SHOTGUN':'GUN');
+  }
 }
 
 function drawKnightEnemy(e, sx, sy){
@@ -2690,7 +2698,11 @@ function restartGame(){
   lastParriedOrbPos = null; parryPulse.active = false;
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
-  weapon = 'gun'; // every level starts back on weapon 1
+  // Ana menüde (bot/autoPilot) her zaman silahlı olsun ki dövüş gösterisi
+  // sürsün; gerçek stage'e girerken (autoPilot=false) silah sıfırlanır ve
+  // stage 1/2 silahı elle almak gerekir, stage 3 (Boss Stages) ise zaten
+  // stage 2 bitmeden açılmadığı için launchStage(3) silahı hemen verir.
+  weapon = autoPilot ? 'gun' : null;
   weaponPickups = [];
   stageWeaponCollected = false;
   stage2WeaponCollected = false;
@@ -2708,6 +2720,7 @@ function restartGame(){
   // Cube V2 restartında diyalog olmasın, direkt boss fight başlasın
   if(playingReal && !autoPilot && currentStage===3){
     cubeDialogueDone = true; // Diyalog atla
+    weapon = 'gun'; // Boss Stages'e her zaman gun+shotgun kazanılmış olarak girilir
     triggerCubeV2();
   }
 }
@@ -2787,6 +2800,7 @@ function launchStage(n){
 
   // Stage 1: Silah pickup spawn et, enemy spawnlama engelle
   if(n===1){
+    weapon = null; // Silahı sıfırla
     weaponPickups = [];
     stageWeaponCollected = false;
     // Oyuncunun önüne silah koy
@@ -2794,10 +2808,20 @@ function launchStage(n){
   }
   // Stage 2: Shotgun pickup spawn et
   if(n===2){
+    weapon = null; // Silahı sıfırla
     weaponPickups = [];
     stage2WeaponCollected = false;
     // Oyuncunun önüne shotgun koy
     spawnWeaponPickup('shotgun', player.x, player.y - 100);
+  }
+  // Boss Stages (Cube V2): buraya ancak Stage 2 tamamlandıktan sonra
+  // girilebiliyor - yani gun VE shotgun zaten önceden kazanılmış demektir.
+  // Pickup beklemeden direkt gun ile başla, 1/2 tuşlarıyla shotgun'a da
+  // geçilebilsin (restartGame() zaten n===3 için weapon='gun' set ediyor,
+  // burada da garanti altına alıyoruz).
+  if(n===3){
+    weapon = 'gun';
+    weaponPickups = [];
   }
 }
 document.getElementById('stage1Card').onclick=()=>launchStage(1);
