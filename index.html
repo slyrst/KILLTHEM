@@ -3243,7 +3243,7 @@ function simpleCreatorHash(v){
 }
 // Default creator password is intentionally simple to replace. The editor is
 // hidden from normal players; this is not server-side security.
-function creatorPasswordOK(v){return simpleCreatorHash(v)==='7f5d4d9c';}
+function creatorPasswordOK(v){return typeof v==='string' && v.trim()==='ultra';}
 function updateCreatorUI(){makeLevelsBtn.classList.toggle('show',creatorUnlocked)}
 updateCreatorUI();
 window.addEventListener('keydown',e=>{
