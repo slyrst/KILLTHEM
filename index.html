@@ -233,6 +233,12 @@
 #cubeSpeaker{font-size:18px;font-weight:900;letter-spacing:3px;margin-bottom:8px;}
 #cubeSubtitle{font-size:26px;font-weight:700;line-height:1.35;min-height:36px;}
 #cubeDialogue.silence #cubeSubtitle{opacity:0;}
+
+  #bossStagesBtn{position:fixed;right:22px;bottom:22px;z-index:68;font-size:15px;padding:12px 18px;letter-spacing:3px;pointer-events:auto;}
+  #bossStageSelect{position:fixed;inset:0;z-index:76;display:none;flex-direction:column;align-items:flex-start;background:rgba(0,0,0,.92);pointer-events:auto;padding:48px 56px;box-sizing:border-box;}
+  #bossStageSelect.show{display:flex;} #bossStageSelect h1{letter-spacing:8px;margin:0 0 28px;font-size:28px;}
+  #multiBossBars{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:56%;max-width:760px;min-width:320px;display:none;flex-direction:column;gap:7px;}
+  #multiBossBars.show{display:flex}.miniBossRow .miniBossName{text-align:center;font-size:14px;font-weight:900;letter-spacing:3px;text-shadow:0 0 8px #f00,2px 2px #000}.miniBossBg{height:15px;background:#200404;border:2px solid #000;border-radius:4px;overflow:hidden}.miniBossFill{height:100%;width:100%;background:linear-gradient(90deg,#8a0000,#ff1414 55%,#ff5a3d);}
 </style>
 </head>
 <body>
@@ -249,6 +255,11 @@
   <div id="bossBarWrap">
     <div id="bossName">MUTATED GREEN</div>
     <div id="bossBarBg"><div id="bossBar"></div></div>
+  </div>
+  <div id="multiBossBars">
+    <div class="miniBossRow"><div class="miniBossName" id="cubeBossName0">CUBE V2</div><div class="miniBossBg"><div class="miniBossFill" id="cubeBossBar0"></div></div></div>
+    <div class="miniBossRow"><div class="miniBossName" id="cubeBossName1">FAKE CUBE</div><div class="miniBossBg"><div class="miniBossFill" id="cubeBossBar1"></div></div></div>
+    <div class="miniBossRow"><div class="miniBossName" id="cubeBossName2">FAKE CUBE</div><div class="miniBossBg"><div class="miniBossFill" id="cubeBossBar2"></div></div></div>
   </div>
   <div id="banner"></div>
   <div id="calibText"></div><div id="parryPulse"></div>
@@ -272,6 +283,7 @@
     </div>
   </div>
 </div>
+<button id="bossStagesBtn" class="bigBtn">BOSS STAGES</button>
 <div id="settingsScreen"><div id="settingsPanel">
   <h2>SETTINGS</h2>
   <div class="settingRow"><span><span style="color:#fff">PARRY VOLUME</span></span><input id="parryVolume" type="range" min="0" max="100"></div>
@@ -285,17 +297,20 @@
     <div id="stage1Card" class="stageCard">
       <div class="completedBadge" id="stage1Badge">✓ COMPLETED</div>
       <canvas class="stageThumb" id="thumb1" width="300" height="160"></canvas>
-      <div class="stageCardTitle">STARTING TO BELIEVE</div>
-    </div>
-    <div id="stage2Card" class="stageCard locked">
-      <div class="completedBadge" id="stage2Badge">✓ COMPLETED</div>
-      <div class="bossReplayBadge" id="stage2BossBadge">BOSS · CUBE V2</div>
-      <canvas class="stageThumb" id="thumb2" width="300" height="160"></canvas>
-      <div class="stageCardTitle" id="stage2Title">BOSS STAGE</div>
-      <div class="lockOverlay"><span class="lockIcon">🔒</span>COMPLETE<br>STARTING TO BELIEVE<br>TO UNLOCK</div>
+      <div class="stageCardTitle">ME</div>
     </div>
   </div>
   <button id="stageBackBtn" class="bigBtn" style="margin-top:32px;">BACK</button>
+</div>
+<div id="bossStageSelect">
+  <h1>BOSS STAGES</h1>
+  <div id="bossStageGrid">
+    <div id="cubeV2BossCard" class="stageCard">
+      <canvas class="stageThumb" id="bossThumbCube" width="300" height="160"></canvas>
+      <div class="stageCardTitle">CUBE V2</div>
+    </div>
+  </div>
+  <button id="bossStageBackBtn" class="bigBtn" style="margin-top:32px;">BACK</button>
 </div>
 <div id="pauseScreen">
   <div id="pauseTitle">LEAVE THE SIMULATION?</div>
@@ -527,7 +542,7 @@ let stage1Finished = false;
 let stageMutationTriggered = false;
 
 // ---------- BOSS (MUTATED GREEN) ----------
-let nextBossThreshold = 100;  // kill count needed for the NEXT mutation - increments by 50 each time, so the boss keeps coming back (arasıra çıksın)
+let nextBossThreshold = 200;  // kill count needed for the NEXT mutation - increments by 50 each time, so the boss keeps coming back (arasıra çıksın)
 let bossEnemyRef = null;     // reference to the enemy object that is/was the boss
 let bossActive = false;      // true while the boss health bar should be shown
 let screenShake = { timer: 0, duration: 1, strength: 0 };
@@ -543,6 +558,8 @@ const STAGE2_BOSS_KILL_THRESHOLD = 200;
 let stage2BossTriggered = false;
 let stage2BossFinished = false;
 let cubeV2Ref = null;
+let cubeV2Clones = [];
+let cubeV2BossBars = [];
 
 window.addEventListener('keydown', e => {
   if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
@@ -611,6 +628,8 @@ function backToMainMenu(){
   document.getElementById('deathScreen').style.display = 'none';
   document.getElementById('stageCompleteScreen').classList.remove('show');
   stageSelect.classList.remove('show');
+  document.getElementById('bossStageSelect').classList.remove('show');
+  document.getElementById('bossStagesBtn').style.display='';
 
   playingReal = false;
   inStages = false;
@@ -881,6 +900,14 @@ function updateAutoPilot(dt){
     mv.y = Math.sin(botAimAngle);
   }
 
+  // Keep the menu demo character around the middle instead of letting it camp corners.
+  const cx=WORLD.w/2, cy=WORLD.h/2;
+  const dcx=cx-player.x, dcy=cy-player.y, centerDist=Math.hypot(dcx,dcy)||1;
+  if(centerDist>420){
+    const pull=Math.min(1,(centerDist-420)/500);
+    mv.x = mv.x*(1-pull*0.72) + (dcx/centerDist)*(pull*1.15);
+    mv.y = mv.y*(1-pull*0.72) + (dcy/centerDist)*(pull*1.15);
+  }
   // smooth the movement vector itself so direction changes ease in/out
   // instead of instantly flipping - feels far less twitchy/robotic
   const moveSmooth = Math.min(1, dt * 7);
@@ -1092,21 +1119,28 @@ function registerKill(e, exploded){
   // tetiklemez; rastgele başka bir düşman asla boss'a çevrilmez - eşiği
   // geçtikten sonraki ilk green kill'i gelene kadar beklenir. Eşik her
   // tetiklemede +50 artar, böylece boss arasıra tekrar tekrar çıkar.
-  if(!bossActive && currentStage!==2 && willBeKillNum >= nextBossThreshold && e.type === 'green'){
+  if(!bossActive && currentStage===1 && willBeKillNum >= nextBossThreshold && e.type === 'green'){
     mutateToBoss(e);
-    nextBossThreshold += 100;
+    nextBossThreshold = Infinity;
     // Bu kill iptal - enemy ölmüyor, mutasyona giriyor.
     return false;
   }
 
-  if(e === bossEnemyRef){
+  if(e === bossEnemyRef && !(currentStage===2 && e.type==='cubev2')){
     bossActive = false;
     bossEnemyRef = null;
   }
 
   if(e.type === 'cubev2'){
-    cubeV2Ref = null;
-    if(currentStage===2 && !stage2BossFinished){
+    if(e.isClone) cubeV2Clones = cubeV2Clones.filter(c=>c!==e);
+    else cubeV2Ref = null;
+
+    // Count the two clones + real Cube as one 3-part boss encounter.
+    const remainingCubeBosses = enemies.filter(en => en!==e && en.type==='cubev2' && en.hp>0);
+    bossActive = remainingCubeBosses.length>0;
+    bossEnemyRef = remainingCubeBosses[0] || null;
+
+    if(currentStage===2 && remainingCubeBosses.length===0 && !stage2BossFinished){
       stage2BossFinished = true;
       localStorage.setItem('kt_stage2_complete','1');
       banner.text = 'CUBE V2 DESTROYED'; banner.timer = 2.2;
@@ -1367,8 +1401,10 @@ function update(dt){
       spawnExplosion(cb.x,cb.y,0.45);
       cubeBullets.splice(i,1); continue;
     }
-    if(cb.owner==='player' && cubeV2Ref && !cubeV2Ref.mutating && dist(cb.x,cb.y,cubeV2Ref.x,cubeV2Ref.y)<cubeV2Ref.radius+8){
-      const e=cubeV2Ref;
+    let parryTarget=null;
+    if(cb.owner==='player'){ parryTarget=enemies.find(en=>en.type==='cubev2' && !en.mutating && dist(cb.x,cb.y,en.x,en.y)<en.radius+8) || null; }
+    if(cb.owner==='player' && parryTarget){
+      const e=parryTarget;
       // No single parry volley can remove more than 3% of V2's max HP.
       const now=performance.now();
       if(now > (e.parryDamageWindowUntil||0)){ e.parryDamageWindowUntil=now+140; e.parryDamageTaken=0; }
@@ -1445,10 +1481,11 @@ function update(dt){
   }
 
   // ----- stage progression -----
-  if(!autoPilot && currentStage===1 && !stageMutationTriggered && player.totalKills >= 100){
-    triggerStage1Mutation();
+  // ME stage: the boss is gated at 200 kills.
+  if(!autoPilot && currentStage===1 && !stage1Finished && player.totalKills >= 200 && nextBossThreshold===Infinity){
+    stageMutationTriggered = true;
   }
-  if(!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished && enemies.length === 0){
+  if(!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished && !bossActive && bossEnemyRef===null){
     finishStage1();
   }
   // Stage 2 is a straight boss rush now: triggerCubeV2() is fired the
@@ -1469,7 +1506,7 @@ function update(dt){
   let spawnCap, spawnInterval;
   // After the Stage 1 global mutation fires, no more reinforcements spawn -
   // every enemy still alive at that moment has to be cleared to finish the stage.
-  const stage1LastStand = (!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished);
+  const stage1LastStand = (!autoPilot && currentStage===1 && bossActive);
   // Stage 2 never spawns regular waves - it's the boss (and only the boss).
   const stage2NoSpawns = (!autoPilot && currentStage===2);
   if(autoPilot){
@@ -1686,6 +1723,16 @@ function triggerCubeV2(){
   };
   enemies.push(e);
   cubeV2Ref = e;
+  cubeV2Clones = [];
+  // Two fake Cube V2 clones attack together with the real boss.
+  for(let i=0;i<2;i++){
+    const side=i===0?-1:1;
+    const c={...e, isClone:true, bossName:'FAKE CUBE', hp:ghp*0.34, maxHp:ghp*0.34, dmg:18, speed:225,
+      x:clamp(cx+side*220,baseR,WORLD.w-baseR), y:clamp(cy+110,baseR,WORLD.h-baseR),
+      weaponTimer:1.4+i*.7, gunFireTimer:.55+i*.2, dashTimer:1.3+i*.45, parryTimer:1.1+i*.4, tauntTimer:9999};
+    enemies.push(c); cubeV2Clones.push(c);
+  }
+  cubeV2BossBars = [e, ...cubeV2Clones];
   bossEnemyRef = e;
   bossActive = true;
 
@@ -1858,7 +1905,7 @@ function finishStage1(){
 function showStageCompleteScreen(n){
   const el = document.getElementById('stageCompleteScreen');
   document.getElementById('stageCompleteTitle').textContent =
-    (n===1 ? 'STARTING TO BELIEVE' : 'CUBE V2') + ' COMPLETE';
+    (n===1 ? 'ME' : 'CUBE V2') + ' COMPLETE';
   document.getElementById('stageCompleteStats').textContent =
     `Total kills: ${player.totalKills}  •  Best streak: ${player.killStreak}`;
   el.classList.add('show');
@@ -2461,12 +2508,24 @@ function updateUI(){
   document.getElementById('streakText').textContent = `Stage: ${currentStage}  •  Streak: ${player.killStreak}  •  Kills: ${player.totalKills}`;
 
   const bossWrapEl = document.getElementById('bossBarWrap');
-  if(bossActive && bossEnemyRef){
+  const multiBossEl = document.getElementById('multiBossBars');
+  if(currentStage===2 && cubeV2BossBars.length && (bossActive || cubeV2BossBars.some(e=>e.hp>0))){
+    bossWrapEl.classList.remove('show');
+    multiBossEl.classList.add('show');
+    const trio=cubeV2BossBars;
+    for(let i=0;i<3;i++){
+      const e=trio[i];
+      document.getElementById('cubeBossName'+i).textContent=i===0?'CUBE V2':'FAKE CUBE';
+      document.getElementById('cubeBossBar'+i).style.width=e?Math.max(0,100*e.hp/e.maxHp)+'%':'0%';
+    }
+  } else if(bossActive && bossEnemyRef){
+    multiBossEl.classList.remove('show');
     bossWrapEl.classList.add('show');
     document.getElementById('bossName').textContent = bossEnemyRef.bossName || 'MUTATED GREEN';
     document.getElementById('bossBar').style.width = Math.max(0, 100*bossEnemyRef.hp/bossEnemyRef.maxHp)+'%';
   } else {
     bossWrapEl.classList.remove('show');
+    multiBossEl.classList.remove('show');
   }
 
   const bannerEl = document.getElementById('banner');
@@ -2505,8 +2564,8 @@ function restartGame(){
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
   weapon = 'gun'; // every level starts back on weapon 1
-  nextBossThreshold = 100; bossEnemyRef = null; stageMutationTriggered=false; stage1Finished=false; bossActive = false;
-  stage2BossTriggered = false; stage2BossFinished = false; cubeV2Ref = null; cubeBullets = [];
+  nextBossThreshold = 200; bossEnemyRef = null; stageMutationTriggered=false; stage1Finished=false; bossActive = false;
+  stage2BossTriggered = false; stage2BossFinished = false; cubeV2Ref = null; cubeV2Clones = []; cubeV2BossBars = []; cubeBullets = [];
   screenShake = { timer:0, duration:1, strength:0 };
   bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
   healPulseTimer = 0;
@@ -2530,69 +2589,27 @@ parryVolumeInput.oninput=()=>{parryVolume=parryVolumeInput.value/100;localStorag
 musicVolumeInput.oninput=()=>{musicVolume=musicVolumeInput.value/100;musicElevator.volume=musicVolume;musicGame.volume=musicVolume;musicGame2.volume=musicVolume;divineMusic.volume=musicVolume;localStorage.setItem('kt_music_volume',musicVolume);};
 sfxVolumeInput.oninput=()=>{masterSfxVolume=sfxVolumeInput.value/100;localStorage.setItem('kt_sfx_volume',masterSfxVolume);};
 
-// ---------- STAGE SELECT ----------
+// ---------- STAGE SELECT / BOSS STAGES ----------
 const stageSelect=document.getElementById('stageSelect');
-
-// Stage 2 is only ever allowed once Stage 1 has actually been finished.
-// This is checked both when drawing the lock UI (so the card visibly
-// looks locked/disabled and can't be clicked) AND again inside launchStage
-// itself as a hard safety net, so there is no path - card click, stray
-// call, anything - that can start Stage 2 early.
-function isStage2Unlocked(){
-  return !!localStorage.getItem('kt_stage1_complete');
-}
-function updateStageLockUI(){
-  const unlocked = isStage2Unlocked();
-  document.getElementById('stage2Card').classList.toggle('locked', !unlocked);
-  // Don't spoil the boss's name while the stage is still locked - only
-  // reveal "CUBE V2" once Stage 1 has actually been completed.
-  document.getElementById('stage2Title').textContent = unlocked ? 'CUBE V2' : 'BOSS STAGE';
-}
-function updateStageCompletionUI(){
-  document.getElementById('stage1Badge').classList.toggle('show', !!localStorage.getItem('kt_stage1_complete'));
-  const done2=!!localStorage.getItem('kt_stage2_complete');
-  document.getElementById('stage2Badge').classList.toggle('show', done2);
-  document.getElementById('stage2BossBadge').classList.toggle('show', done2);
-}
-
+const bossStageSelect=document.getElementById('bossStageSelect');
+function updateStageCompletionUI(){ document.getElementById('stage1Badge').classList.toggle('show', !!localStorage.getItem('kt_stage1_complete')); }
 function openStageSelect(){
-  updateStageLockUI();
-  updateStageCompletionUI();
-  document.getElementById('mainMenu').classList.add('hidden');
-  stageSelect.classList.add('show');
+  updateStageCompletionUI(); document.getElementById('mainMenu').classList.add('hidden'); document.getElementById('bossStagesBtn').style.display='none'; stageSelect.classList.add('show');
 }
-
-// Clicking a stage card jumps straight into that run - no title/ENTER
-// screen in between.
+function openBossStageSelect(){
+  document.getElementById('mainMenu').classList.add('hidden'); document.getElementById('bossStagesBtn').style.display='none'; bossStageSelect.classList.add('show');
+}
 function launchStage(n){
-  if(n===2 && !isStage2Unlocked()) return; // locked - refuse, just in case
-
-  currentStage = n;
-  stageSelect.classList.remove('show');
-
-  inStages = false;
-  inMenu = false;
-  autoPilot = false;
-  playingReal = true;
-  document.getElementById('ui').style.display = '';
-
-  const mapImg = currentMapImg();
-  if(mapImg.loaded) fitWorldToMapImg(mapImg);
-
-  restartGame();
-  playWakeUpEffect();
-  tryPlayMusic(currentGameMusic(), () => gameStarted && playingReal);
-
-  // Stage 2 is a boss-rush stage: the moment the player wakes up here,
-  // Cube V2 grows in immediately and its dialogue plays right away -
-  // there's no regular wave-clearing before the fight anymore.
-  if(n===2){
-    triggerCubeV2();
-  }
+  currentStage=n; stageSelect.classList.remove('show'); bossStageSelect.classList.remove('show'); document.getElementById('bossStagesBtn').style.display='none';
+  inStages=false; inMenu=false; autoPilot=false; playingReal=true; document.getElementById('ui').style.display='';
+  const mapImg=currentMapImg(); if(mapImg.loaded) fitWorldToMapImg(mapImg);
+  restartGame(); playWakeUpEffect(); tryPlayMusic(currentGameMusic(),()=>gameStarted&&playingReal); if(n===2) triggerCubeV2();
 }
 document.getElementById('stage1Card').onclick=()=>launchStage(1);
-document.getElementById('stage2Card').onclick=()=>launchStage(2);
-document.getElementById('stageBackBtn').onclick=()=>{stageSelect.classList.remove('show');document.getElementById('mainMenu').classList.remove('hidden');};
+document.getElementById('cubeV2BossCard').onclick=()=>launchStage(2);
+document.getElementById('bossStagesBtn').onclick=()=>{gameStarted=true;musicElevator.pause();musicElevator.currentTime=0;openBossStageSelect();};
+document.getElementById('stageBackBtn').onclick=()=>{stageSelect.classList.remove('show');document.getElementById('mainMenu').classList.remove('hidden');document.getElementById('bossStagesBtn').style.display='';};
+document.getElementById('bossStageBackBtn').onclick=()=>{bossStageSelect.classList.remove('show');document.getElementById('mainMenu').classList.remove('hidden');document.getElementById('bossStagesBtn').style.display='';};
 
 // ---------- STAGE THUMBNAIL PREVIEWS ----------
 // Each stage card shows a small live canvas with its own map and a tiny
@@ -2611,7 +2628,7 @@ function makeThumbState(mapImg, kinds){
   };
 }
 const thumb1Canvas = document.getElementById('thumb1');
-const thumb2Canvas = document.getElementById('thumb2');
+const thumb2Canvas = document.getElementById('bossThumbCube');
 const thumb1Ctx = thumb1Canvas.getContext('2d');
 const thumb2Ctx = thumb2Canvas.getContext('2d');
 const thumbState1 = makeThumbState(IMG.map,  ['green','glob','green']);
