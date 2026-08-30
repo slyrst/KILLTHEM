@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MINI ULTRAKILL</title>
+<title>KILLTHEM</title>
 <style>
   html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Trebuchet MS',Arial,sans-serif;user-select:none;-webkit-user-select:none;-moz-user-select:none;} canvas{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
   #game{display:block;cursor:crosshair;}
@@ -18,7 +18,6 @@
   #dashBarBg{width:100%;height:12px;background:#112233;border:2px solid #000;border-radius:3px;overflow:hidden;}
   #dashBar{height:100%;width:100%;background:linear-gradient(90deg,#22ccff,#66ffff);}
   #streakText{position:absolute;top:16px;left:16px;margin-top:96px;font-size:14px;opacity:.85;}
-  #help{position:absolute;bottom:12px;left:16px;font-size:13px;line-height:1.5;opacity:.75;background:rgba(0,0,0,.35);padding:8px 12px;border-radius:6px;}
   #center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
   #deathScreen{
     position:fixed;inset:0;background:rgba(10,0,0,.85);display:none;
@@ -63,34 +62,142 @@
     background:linear-gradient(90deg,#8a0000,#ff1414 55%,#ff5a3d);
     transition:width .15s;
   }
-  #mainMenu{
-    position:fixed;inset:0;z-index:60;
-    display:flex;align-items:center;justify-content:center;
-    background:transparent;pointer-events:none;
-    opacity:1;transition:opacity .6s ease;
-  }
-  #mainMenu.fade-out{ opacity:0; }
-  #mainMenu.hidden{ display:none; }
-  #playBtn{
+
+  /* ---------- shared big menu-button style ---------- */
+  .bigBtn{
     pointer-events:auto;
     background:transparent;
     color:#fff;
     border:3px solid #fff;
     font-family:'Trebuchet MS',Arial,sans-serif;
-    font-size:30px;
+    font-size:26px;
     font-weight:bold;
-    letter-spacing:8px;
-    padding:20px 66px;
+    letter-spacing:6px;
+    padding:16px 50px;
     cursor:pointer;
     text-shadow:0 0 10px rgba(255,255,255,.6);
     box-shadow:0 0 0 rgba(255,255,255,0);
     transition:background .2s, box-shadow .2s, transform .15s;
   }
-  #playBtn:hover{
+  .bigBtn:hover{
     background:rgba(255,255,255,.08);
     box-shadow:0 0 22px rgba(255,255,255,.35);
   }
-  #playBtn:active{ transform:scale(0.96); }
+  .bigBtn:active{ transform:scale(0.96); }
+  .bigBtn.danger{ border-color:#ff4444; color:#ff8888; text-shadow:0 0 10px rgba(255,68,68,.6); }
+  .bigBtn.danger:hover{ background:rgba(255,68,68,.12); box-shadow:0 0 22px rgba(255,68,68,.45); }
+
+  #mainMenu{
+    position:fixed;inset:0;z-index:60;
+    pointer-events:none;
+    opacity:1;transition:opacity .6s ease;
+  }
+  #mainMenu.fade-out{ opacity:0; }
+  #mainMenu.hidden{ display:none; }
+  #menuStack{
+    position:absolute; bottom:34px; left:34px;
+    display:flex; flex-direction:column; align-items:flex-start; gap:18px;
+  }
+  #playBtn{ font-size:23px; padding:15px 42px; letter-spacing:6px; }
+
+  #diffCorner{
+    display:flex; flex-direction:column; align-items:flex-start; gap:10px;
+    pointer-events:auto;
+  }
+  #diffToggleBtn{
+    background:rgba(0,0,0,.35);
+    font-family:'Trebuchet MS',Arial,sans-serif;
+    font-size:14px; font-weight:bold; letter-spacing:2px;
+    padding:10px 18px; cursor:pointer; border-radius:4px;
+    border:2px solid rgba(255,255,255,.6); color:#fff;
+    transition:background .15s, box-shadow .15s;
+  }
+  #diffToggleBtn:hover{ background:rgba(255,255,255,.12); box-shadow:0 0 14px rgba(255,255,255,.3); }
+  #diffOptions{
+    display:none; flex-direction:column; gap:8px;
+    background:rgba(0,0,0,.55); padding:10px; border-radius:6px;
+  }
+  #diffOptions.show{ display:flex; }
+  .diffBtn{
+    background:transparent;
+    font-family:'Trebuchet MS',Arial,sans-serif;
+    font-size:14px; font-weight:bold; letter-spacing:2px;
+    padding:9px 22px; cursor:pointer; border-radius:3px;
+    border:2px solid rgba(255,255,255,.5); color:rgba(255,255,255,.75);
+    text-align:left;
+    transition:background .15s, border-color .15s, color .15s, box-shadow .15s;
+  }
+  .diffBtn:hover{ border-color:#fff; color:#fff; }
+  .diffBtn[data-diff="easy"].active{ border-color:#39ff6e; color:#39ff6e; background:rgba(57,255,110,.12); box-shadow:0 0 14px rgba(57,255,110,.5); }
+  .diffBtn[data-diff="normal"].active{ border-color:#ffdd33; color:#ffdd33; background:rgba(255,221,51,.12); box-shadow:0 0 14px rgba(255,221,51,.5); }
+  .diffBtn[data-diff="brutal"].active{ border-color:#ff3333; color:#ff5555; background:rgba(255,51,51,.14); box-shadow:0 0 14px rgba(255,51,51,.55); }
+
+  /* ---------- stage intro screen ---------- */
+  #stagesScreen{
+    position:fixed;inset:0;z-index:60;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(0,0,0,.6);
+    pointer-events:none;
+    opacity:0;transition:opacity .4s ease;
+  }
+  #stagesScreen.show{
+    opacity:1;
+    pointer-events:auto;
+    animation: stageGlitchIn 2.6s ease-out forwards;
+  }
+  #stagesScreen.hidden{ display:none; }
+  @keyframes stageGlitchIn{
+    0%  { opacity:0;   transform:translate(0,0) skewX(0deg); }
+    4%  { opacity:.7;  transform:translate(-9px,3px) skewX(-5deg); }
+    8%  { opacity:.05; transform:translate(7px,-4px) skewX(4deg); }
+    12% { opacity:.85; transform:translate(-6px,2px) skewX(-3deg); }
+    16% { opacity:.1;  transform:translate(6px,-3px) skewX(3deg); }
+    20% { opacity:.75; transform:translate(-4px,3px) skewX(-4deg); }
+    24% { opacity:.15; transform:translate(4px,-2px) skewX(2deg); }
+    28% { opacity:.65; transform:translate(-4px,1px) skewX(-2deg); }
+    32% { opacity:.2;  transform:translate(2px,-2px) skewX(1deg); }
+    36% { opacity:.32; transform:translate(0,0) skewX(0deg); }
+    55% { opacity:.55; }
+    75% { opacity:.78; }
+    100%{ opacity:1;   transform:translate(0,0) skewX(0deg); }
+  }
+  #stagesScreen.show .stageTitle{
+    animation: stageTitleGlitch 2.6s ease-out 1;
+  }
+  @keyframes stageTitleGlitch{
+    0%, 40%, 100% { text-shadow:0 0 24px #22ff66,0 0 60px #0aff44,4px 4px 0 #000; }
+    6%  { text-shadow:-5px 0 #ff0044, 5px 0 #00eaff, 0 0 24px #22ff66; }
+    14% { text-shadow:5px 0 #ff0044, -5px 0 #00eaff, 0 0 24px #22ff66; }
+    22% { text-shadow:-3px 0 #ff0044, 3px 0 #00eaff, 0 0 30px #0aff44; }
+    30% { text-shadow:3px 0 #ff0044, -3px 0 #00eaff, 0 0 24px #22ff66; }
+  }
+  .stageLabel{
+    color:#ff3333;font-size:24px;font-weight:bold;letter-spacing:10px;
+    text-shadow:0 0 14px #ff0000;margin-bottom:8px;
+  }
+  .stageTitle{
+    color:#39ff6e;font-size:100px;font-weight:900;letter-spacing:14px;
+    text-shadow:0 0 24px #22ff66,0 0 60px #0aff44,4px 4px 0 #000;
+    margin:0 0 20px;
+  }
+  .stageSubtitle{
+    color:#dfffe6;font-size:20px;font-style:italic;max-width:640px;
+    text-align:center;line-height:1.6;margin-bottom:36px;text-shadow:2px 2px 4px #000;
+  }
+
+  /* ---------- pause / leave-confirm screen ---------- */
+  #pauseScreen{
+    position:fixed;inset:0;z-index:70;
+    display:none;align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(0,0,0,.72);
+    pointer-events:auto;
+  }
+  #pauseScreen.show{ display:flex; }
+  #pauseTitle{
+    color:#fff;font-size:38px;font-weight:900;letter-spacing:5px;margin-bottom:36px;
+    text-shadow:0 0 16px rgba(255,255,255,.5);text-align:center;
+  }
+  #pauseBtnRow{ display:flex; gap:24px; }
 </style>
 </head>
 <body>
@@ -110,9 +217,6 @@
   </div>
   <div id="banner"></div>
   <div id="calibText"></div><div id="parryPulse"></div>
-  <div id="help">
-    WASD move &nbsp;•&nbsp; Mouse aim &nbsp;•&nbsp; Left Click shoot &nbsp;•&nbsp; 1 Gun &nbsp;•&nbsp; 2 Shotgun &nbsp;•&nbsp; F parry &nbsp;•&nbsp; Q dash
-  </div>
 </div>
 <div id="deathScreen">
   <h1>YOU DIED</h1>
@@ -120,7 +224,30 @@
   <button onclick="restartGame()">TRY AGAIN</button>
 </div>
 <div id="mainMenu">
-  <button id="playBtn">PLAY</button>
+  <div id="menuStack">
+    <button id="playBtn" class="bigBtn">PLAY</button>
+    <div id="diffCorner">
+      <button id="diffToggleBtn">DIFFICULTY: NORMAL</button>
+      <div id="diffOptions">
+        <button class="diffBtn" data-diff="easy">EASY</button>
+        <button class="diffBtn active" data-diff="normal">NORMAL</button>
+        <button class="diffBtn" data-diff="brutal">BRUTAL</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="stagesScreen">
+  <div class="stageLabel">STAGE 1</div>
+  <div class="stageTitle">MATRIX</div>
+  <div class="stageSubtitle" id="stageSubtitle"></div>
+  <button id="enterBtn" class="bigBtn">ENTER</button>
+</div>
+<div id="pauseScreen">
+  <div id="pauseTitle">LEAVE THE SIMULATION?</div>
+  <div id="pauseBtnRow">
+    <button id="leaveBtn" class="bigBtn danger">LEAVE</button>
+    <button id="stayBtn" class="bigBtn">STAY</button>
+  </div>
 </div>
 
 <script>
@@ -170,6 +297,27 @@ const IMG = {
   orb:    loadImg('images/yellow-orb.png'), // rename/adjust this path if your file is named differently
   explosion: loadImg('images/explosion.png'),
 };
+
+// ---------- SOUND EFFECTS ----------
+const SFX = {
+  dash:      new Audio('musics/dash.mp3'),
+  heal:      new Audio('musics/heal.mp3'),
+  explosion: new Audio('musics/explosion.mp3'),
+  shotgun:   new Audio('musics/shotgun.mp3'),
+  shoot:     new Audio('musics/shoot.mp3'),
+  parry:     new Audio('musics/parry.mp3'),
+};
+// Plays a sound effect, allowing overlapping instances (cloning the node)
+// so rapid-fire shots/explosions don't cut each other off. Fails silently
+// if the file is missing or the browser blocks autoplay.
+function playSFX(audio, volume=0.65){
+  try{
+    const inst = audio.cloneNode();
+    inst.volume = volume;
+    const p = inst.play();
+    if(p && p.catch) p.catch(()=>{});
+  }catch(e){}
+}
 
 // placeholder-drawing helper (used when an image failed to load)
 function drawPlaceholder(x, y, w, h, color, label, rot){
@@ -249,9 +397,12 @@ let explosions = [];
 let deathPieces = [];
 let corpsePieces = [];
 
-// ---------- MAIN MENU / BACKGROUND DEMO BOT ----------
-let inMenu = true;     // true until the player hits PLAY
-let autoPilot = true;  // true while an AI bot is driving the player as a menu background
+// ---------- MAIN MENU / STAGES INTRO / PAUSE STATE ----------
+let inMenu = true;     // true until the player has fully entered the real game
+let inStages = false;  // true while the STAGE 1 / MATRIX intro screen is up
+let playingReal = false; // true only once the player has hit ENTER and is in control
+let paused = false;    // true while the ESC "leave simulation?" screen is up
+let autoPilot = true;  // true while an AI bot is driving the player (menu + stages background)
 let botAimAngle = 0;
 let botFireTimer = 0.4;
 let botDashTimer = 1.6;
@@ -259,6 +410,42 @@ let botWeaponTimer = 5;
 let botStrafeDir = 1;
 let botStrafeTimer = 2;
 let botMoveX = 0, botMoveY = 0; // smoothed movement vector, avoids jittery direction snaps
+
+// ---------- DIFFICULTY ----------
+// easy: boss/entity HP halved, our damage doubled, parry MUCH more forgiving.
+// normal: exactly the current/original balance (all multipliers = 1).
+// brutal: exactly the opposite of easy, doubled - twice as hard as normal.
+const DIFFICULTIES = {
+  easy:   { bossHpMult:0.5, enemyHpMult:0.5, playerDmgMult:2,   parryRangeMult:2.4, parryAngleMult:1.6 },
+  normal: { bossHpMult:1,   enemyHpMult:1,   playerDmgMult:1,   parryRangeMult:1,   parryAngleMult:1   },
+  brutal: { bossHpMult:2,   enemyHpMult:2,   playerDmgMult:0.5, parryRangeMult:0.5, parryAngleMult:0.6 },
+};
+let DIFF = DIFFICULTIES.normal;
+
+const diffToggleBtn = document.getElementById('diffToggleBtn');
+const diffOptions = document.getElementById('diffOptions');
+
+diffToggleBtn.addEventListener('click', () => {
+  diffOptions.classList.toggle('show');
+});
+
+document.querySelectorAll('.diffBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diffBtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    DIFF = DIFFICULTIES[btn.dataset.diff] || DIFFICULTIES.normal;
+    diffToggleBtn.textContent = 'DIFFICULTY: ' + btn.dataset.diff.toUpperCase();
+    diffOptions.classList.remove('show');
+  });
+});
+
+const STAGE_LINES = [
+  "Wake up, Cube.",
+  "This simulation was built to break you. It will not.",
+  "Every wall you see here is a lie wearing the shape of a rule.",
+  "Tonight, we tear it down floor by floor.",
+  "Cube, you will not escape this simulation — you will end it."
+];
 
 // ---------- BOSS (MUTATED GREEN) ----------
 let nextBossThreshold = 50;  // kill count needed for the NEXT mutation - increments by 50 each time, so the boss keeps coming back (arasıra çıksın)
@@ -270,6 +457,7 @@ let healPulseTimer = 0; // green ring around the player on a point-blank heal-ki
 
 window.addEventListener('keydown', e => {
   if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
+  if(e.key === 'Escape'){ togglePause(); return; }
   if(e.key === '1') weapon='gun';
   if(e.key === '2') weapon='shotgun';
   keys[e.key.toLowerCase()] = true;
@@ -289,20 +477,74 @@ window.addEventListener('dragstart', e => e.preventDefault());
 window.addEventListener('selectstart', e => e.preventDefault());
 window.addEventListener('mouseup', () => mouseDown = false);
 
+// Only the real, player-controlled run can be paused with ESC - not the
+// main menu demo, not the stages intro screen.
+function togglePause(){
+  if(!playingReal || !player.alive) return;
+  if(paused){
+    resumeGame();
+  } else {
+    paused = true;
+    document.getElementById('pauseScreen').classList.add('show');
+    musicGame.pause();
+  }
+}
+function resumeGame(){
+  paused = false;
+  document.getElementById('pauseScreen').classList.remove('show');
+  if(playingReal) tryPlayMusic(musicGame, () => playingReal && !paused);
+}
+
+// LEAVE -> back to the main menu, bot takes back over.
+document.getElementById('leaveBtn').addEventListener('click', () => {
+  document.getElementById('pauseScreen').classList.remove('show');
+  paused = false;
+  backToMainMenu();
+});
+// STAY -> just resume the current run.
+document.getElementById('stayBtn').addEventListener('click', () => {
+  resumeGame();
+});
+
+function backToMainMenu(){
+  musicGame.pause();
+  musicGame.currentTime = 0;
+  gameStarted = false;
+  tryPlayMusic(musicElevator, () => !gameStarted);
+
+  document.getElementById('ui').style.display = 'none';
+  document.getElementById('deathScreen').style.display = 'none';
+
+  const stagesEl = document.getElementById('stagesScreen');
+  stagesEl.classList.remove('show');
+  stagesEl.classList.add('hidden');
+
+  const menuEl = document.getElementById('mainMenu');
+  menuEl.classList.remove('fade-out','hidden');
+
+  playingReal = false;
+  inStages = false;
+  inMenu = true;
+  autoPilot = true;
+
+  restartGame();
+}
+
 function tryParry(){
   if(!player.alive || parryCooldown > 0) return;
 
   // Shotgun mermisini parryleyince mermi kaybolmaz: bulunduğu yerde patlar ve düz devam eden 2x hasarlı patlayıcı mermi olur.
   let shotgunParried = false;
+  const shotgunParryRange = 105 * DIFF.parryRangeMult;
   for(const b of bullets){
     if(b.type !== 'shotgun' || b.parriedExplosive) continue;
-    if(dist(b.x,b.y,player.x,player.y) <= 105){
+    if(dist(b.x,b.y,player.x,player.y) <= shotgunParryRange){
       spawnExplosion(b.x,b.y,1.15);
       b.parriedExplosive=true;
       b.explosive=true;
       b.dmgMultiplier=2;
       b.explosionRadius=125;
-      b.explosionDamage=120;
+      b.explosionDamage=120*DIFF.playerDmgMult;
 
       // Parrylenen shotgun pellet artık spread açısını korumaz:
       // mouse'un tam yönüne, dümdüz gider.
@@ -316,7 +558,7 @@ function tryParry(){
   }
 
   let parried = false;
-  const range = 88;
+  const range = 88 * DIFF.parryRangeMult;
 
   for(const o of orbs){
     if(o.parried) continue;
@@ -339,7 +581,7 @@ function tryParry(){
           Math.sin(enemyAngle-aim), Math.cos(enemyAngle-aim)
         ));
 
-        if(angleDiff < Math.PI*0.48){
+        if(angleDiff < Math.PI*0.48*DIFF.parryAngleMult){
           const score = angleDiff * 700 + d * 0.22;
           if(score < bestScore){
             bestScore = score;
@@ -357,7 +599,7 @@ function tryParry(){
       o.vy = Math.sin(aim) * speed;
       o.owner = 'player';
       o.parried = true;
-      o.dmg = 100;
+      o.dmg = 100 * DIFF.playerDmgMult;
       o.target = target;
       o.homing = !!target;
 
@@ -389,6 +631,7 @@ function tryParry(){
   // (like the boss's 5-orb burst) can each still be parried in turn.
   if(parried || shotgunParried){
     parryCooldown = 0.08;
+    if(!autoPilot) playSFX(SFX.parry, 0.7);
   }
 }
 
@@ -418,6 +661,7 @@ function tryDash(){
   player.dashTimer = player.dashDuration;
   player.dashCooldown = player.dashCooldownMax;
   player.invuln = Math.max(player.invuln, player.dashDuration + 0.08);
+  if(!autoPilot) playSFX(SFX.dash, 0.6);
 }
 
 function playerPortrait(){
@@ -426,11 +670,11 @@ function playerPortrait(){
   return IMG.nice;
 }
 
-// Drives the player like a simple bot while the main menu is showing, so
-// there's live gameplay happening behind the PLAY button. Returns the
-// normalized movement vector for this frame; also fakes the mouse aim
-// (via mouseScreen, which mouseWorld()/shoot()/drawPlayer() already read)
-// and fires/dashes/switches weapons on its own timers.
+// Drives the player like a simple bot while the main menu / stages intro
+// is showing, so there's live gameplay happening behind those screens.
+// Returns the normalized movement vector for this frame; also fakes the
+// mouse aim (via mouseScreen, which mouseWorld()/shoot()/drawPlayer()
+// already read) and fires/dashes/switches weapons on its own timers.
 function updateAutoPilot(dt){
   // pick the nearest enemy to fight
   let target = null, bestD = Infinity;
@@ -522,6 +766,7 @@ function shoot(){
   const muzzleDist = player.radius + 18;
   if(weapon === 'shotgun'){
     player.fireCooldown = player.shotgunRate;
+    if(!autoPilot) playSFX(SFX.shotgun, 0.7);
     // 3 pellets: gerçek shotgun gibi her pellet farklı bir yöne açılır.
     // Hepsi aynı namlu noktasından çıkar; sadece uçuş açıları farklıdır.
     // Böylece mermiler yan yana paralel gitmez, ilerledikçe yayılır.
@@ -533,7 +778,7 @@ function shoot(){
         y:player.y+Math.sin(pelletAng)*muzzleDist,
         vx:Math.cos(pelletAng)*690,
         vy:Math.sin(pelletAng)*690,
-        dmg:22,
+        dmg:22*DIFF.playerDmgMult,
         type:'shotgun',
         spawnX:player.x,
         spawnY:player.y,
@@ -543,7 +788,8 @@ function shoot(){
     }
   } else {
     player.fireCooldown = player.fireRate;
-    bullets.push({x:player.x+Math.cos(ang)*muzzleDist,y:player.y+Math.sin(ang)*muzzleDist,vx:Math.cos(ang)*780,vy:Math.sin(ang)*780,dmg:22,type:'gun'});
+    if(!autoPilot) playSFX(SFX.shoot, 0.55);
+    bullets.push({x:player.x+Math.cos(ang)*muzzleDist,y:player.y+Math.sin(ang)*muzzleDist,vx:Math.cos(ang)*780,vy:Math.sin(ang)*780,dmg:22*DIFF.playerDmgMult,type:'gun'});
   }
 }
 
@@ -568,15 +814,17 @@ function spawnEnemy(){
 
   const type = Math.random() < 0.55 ? 'green' : 'glob';
   if(type === 'green'){
+    const hp = 60 * DIFF.enemyHpMult;
     enemies.push({
-      type:'green', x, y, radius:24, hp:60, maxHp:60, speed: 118 + waveDifficulty*4,
+      type:'green', x, y, radius:24, hp, maxHp:hp, speed: 118 + waveDifficulty*4,
       state:'chase', stateTimer:0, dmg: 18,
       lungeFrom:{x:0,y:0}, lungeTo:{x:0,y:0},
       hitCooldown:0,
     });
   } else {
+    const hp = 40 * DIFF.enemyHpMult;
     enemies.push({
-      type:'glob', x, y, radius:26, hp:40, maxHp:40, speed: 70,
+      type:'glob', x, y, radius:26, hp, maxHp:hp, speed: 70,
       state:'kite', fireTimer: 0.8 + Math.random()*0.5,
       preferredMin: 260, preferredMax: 420,
     });
@@ -591,7 +839,7 @@ function mutateToBoss(e){
   const GREEN_BASE_HP = 60;
   e.isBoss = true;
   e.bossName = 'MUTATED GREEN';
-  e.maxHp = GREEN_BASE_HP * 30;
+  e.maxHp = GREEN_BASE_HP * 30 * DIFF.bossHpMult;
   e.hp = e.maxHp;
   e.baseRadius = e.radius;
   e.targetRadius = e.baseRadius * 3.4;
@@ -819,9 +1067,9 @@ function update(dt){
         let hitDamage = b.dmg;
         if(b.type === 'shotgun'){
           const travel = Math.hypot(b.x-b.spawnX, b.y-b.spawnY);
-          if(travel <= 85) hitDamage = 22 * 1.5;       // very close: 1.5x normal gun
-          else if(travel <= 260) hitDamage = 22 * 0.5; // normal range: half normal gun
-          else hitDamage = 22 * 0.25;                  // far range: quarter normal gun
+          if(travel <= 85) hitDamage = 22 * 1.5 * DIFF.playerDmgMult;       // very close: 1.5x normal gun
+          else if(travel <= 260) hitDamage = 22 * 0.5 * DIFF.playerDmgMult; // normal range: half normal gun
+          else hitDamage = 22 * 0.25 * DIFF.playerDmgMult;                  // far range: quarter normal gun
         }
         if(b.explosive){
           // Patlayıcı parry mermisi hedefte patlar ve çevresine hasar verir.
@@ -1045,6 +1293,7 @@ function updateGlob(e, dt){
 
 function spawnExplosion(x,y,scale=1){
   explosions.push({x,y,timer:0.34,maxTimer:0.34,scale});
+  if(!autoPilot) playSFX(SFX.explosion, 0.55);
 }
 
 function spawnDeathPieces(){
@@ -1154,6 +1403,7 @@ function healPlayer(amount){
   if(!player.alive) return;
   player.hp = Math.min(player.maxHp, player.hp + amount);
   healPulseTimer = 0.4;
+  if(!autoPilot) playSFX(SFX.heal, 0.6);
 }
 
 function showBanner(){
@@ -1528,7 +1778,8 @@ function restartGame(){
 
 // ---------- MUSIC ----------
 // musics/elevator.mp3 loops in the background while the main menu is up,
-// musics/game.mp3 takes over (looping) the moment the player hits PLAY.
+// musics/game.mp3 takes over (looping) as soon as the STAGE 1 intro shows,
+// and keeps playing (pausable via ESC) through the real run.
 const musicElevator = new Audio('musics/elevator.mp3');
 musicElevator.loop = true;
 musicElevator.volume = 0.55;
@@ -1560,10 +1811,12 @@ function tryPlayMusic(audio, guard){
 
 tryPlayMusic(musicElevator, () => !gameStarted); // starts as soon as the page loads (menu music)
 
-// ---------- MAIN MENU WIRING ----------
-// While inMenu is true the bot plays in the background and the normal HUD
-// stays hidden - only the PLAY button shows. Clicking it fades the menu
-// out, then throws the player straight into a fresh, player-controlled game.
+// ---------- MAIN MENU -> STAGES -> REAL GAME WIRING ----------
+// 1) Main menu: bot plays behind the PLAY button, elevator music.
+// 2) Hitting PLAY fades the menu out and brings up the STAGE 1 / MATRIX
+//    intro screen - the bot KEEPS playing behind it, and game.mp3 kicks in.
+// 3) Hitting ENTER on that screen fades it out and hands control to the
+//    player for real (HUD appears, fresh stats).
 document.getElementById('ui').style.display = 'none';
 
 // Flip the flag (and kill elevator) on pointerdown, which fires on the
@@ -1583,22 +1836,44 @@ document.getElementById('playBtn').addEventListener('click', () => {
 
   musicElevator.pause();
   musicElevator.currentTime = 0;
-  tryPlayMusic(musicGame);
 
   setTimeout(() => {
     menuEl.classList.add('hidden');
+
+    // bot keeps driving the player in the background; STAGE 1 intro shows
+    inStages = true;
+    const stagesEl = document.getElementById('stagesScreen');
+    stagesEl.classList.remove('hidden');
+    // force reflow so the opacity transition actually plays
+    void stagesEl.offsetWidth;
+    stagesEl.classList.add('show');
+
+    document.getElementById('stageSubtitle').innerHTML = STAGE_LINES.join('<br>');
+
+    tryPlayMusic(musicGame, () => gameStarted);
+  }, 620);
+});
+
+document.getElementById('enterBtn').addEventListener('click', () => {
+  const stagesEl = document.getElementById('stagesScreen');
+  stagesEl.classList.remove('show');
+
+  setTimeout(() => {
+    stagesEl.classList.add('hidden');
+    inStages = false;
     inMenu = false;
     autoPilot = false;
+    playingReal = true;
     document.getElementById('ui').style.display = '';
     restartGame();
-  }, 620);
+  }, 550);
 });
 
 // ---------- GAME LOOP ----------
 function loop(now){
   const dt = Math.min(0.033, (now - lastTime)/1000);
   lastTime = now;
-  update(dt);
+  if(!paused) update(dt);
   render();
   requestAnimationFrame(loop);
 }
