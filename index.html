@@ -908,15 +908,38 @@ function update(dt){
   }
 
   // ----- spawn -----
-  // Ana menüde arka planda gösteri yapıldığı için çok daha kalabalık ve
-  // çok daha hızlı spawn olur (normal oyunun ~10 katı kadar düşman).
+  // Ana menüde arka planda gösteri yapıldığı için en baştan çok kalabalık
+  // ve çok hızlı spawn olur. Gerçek oyunda ise kill sayısı arttıkça
+  // kademeli olarak kalabalıklaşır: 100 kill'de daha fazla düşman,
+  // 200 kill'de bunun 2 katı daha fazla, 300 kill'den sonra ise tıpkı
+  // ana menüdeki kadar yoğun (aynı cap + aynı spawn hızı).
   spawnTimer -= dt;
-  const spawnCap = (autoPilot ? 100 : 10) + waveDifficulty;
+
+  let spawnCap, spawnInterval;
+  if(autoPilot){
+    spawnCap = 100 + waveDifficulty;
+    spawnInterval = Math.max(0.08, 0.35 - waveDifficulty*0.01);
+  } else {
+    const kills = player.totalKills;
+    if(kills >= 300){
+      // Ana menüdekiyle birebir aynı yoğunluk.
+      spawnCap = 100 + waveDifficulty;
+      spawnInterval = Math.max(0.08, 0.35 - waveDifficulty*0.01);
+    } else if(kills >= 200){
+      spawnCap = 50 + waveDifficulty;      // 200'den sonra: ilk artışın 2 katı
+      spawnInterval = Math.max(0.25, 1.2 - waveDifficulty*0.05);
+    } else if(kills >= 100){
+      spawnCap = 30 + waveDifficulty;      // 100'den sonra: daha fazla düşman
+      spawnInterval = Math.max(0.4, 1.6 - waveDifficulty*0.06);
+    } else {
+      spawnCap = 10 + waveDifficulty;      // başlangıç yoğunluğu
+      spawnInterval = Math.max(0.6, 2.2 - waveDifficulty*0.08);
+    }
+  }
+
   if(spawnTimer <= 0 && enemies.length < spawnCap){
     spawnEnemy();
-    spawnTimer = autoPilot
-      ? Math.max(0.08, 0.35 - waveDifficulty*0.01)
-      : Math.max(0.6, 2.2 - waveDifficulty*0.08);
+    spawnTimer = spawnInterval;
     waveDifficulty += 0.05;
   }
 
