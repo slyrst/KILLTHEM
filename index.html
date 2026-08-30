@@ -1175,10 +1175,20 @@ function update(dt){
     o.x += o.vx*dt;
     o.y += o.vy*dt;
 
-    // Tutorial: freeze the moment down dramatically when the attack reaches parry range.
+    // Tutorial: first slow the moment down, THEN show the parry instruction.
+    // This gives the player a short "oh shit..." slow-motion beat before
+    // the F TO PARRY prompt appears.
     if(o.tutorialParry && tutorialState==='parryWait' && dist(o.x,o.y,player.x,player.y)<180){
-      tutorialState='parry'; tutorialSlowMo=true;
-      tutorialShow('F TO PARRY','');
+      tutorialState='parrySlow';
+      tutorialSlowMo=true;
+      tutorialHide();
+
+      // Wait a little in slow motion before revealing the instruction.
+      setTimeout(()=>{
+        if(!player.alive || !playingReal || tutorialState!=='parrySlow') return;
+        tutorialState='parry';
+        tutorialShow('F TO PARRY','');
+      },450);
     }
 
     if(o.x<=0 || o.y<=0 || o.x>=WORLD.w || o.y>=WORLD.h){
@@ -2015,7 +2025,13 @@ function tutorialShow(title, hint=''){
 function tutorialHide(){
   const ov=document.getElementById('tutorialOverlay');
   ov.classList.remove('show'); ov.classList.add('wake');
-  setTimeout(()=>{ ov.style.display='none'; ov.classList.remove('wake'); },1200);
+  setTimeout(()=>{
+    // Don't hide a newer tutorial prompt that appeared during the fade.
+    if(!ov.classList.contains('show')){
+      ov.style.display='none';
+      ov.classList.remove('wake');
+    }
+  },1200);
 }
 function startWakeTutorial(){
   // First: pure darkness, then the world slowly comes into view like waking up.
