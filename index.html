@@ -1766,9 +1766,22 @@ function triggerCubeV2(){
   bossPulse.duration = 0.9;
   bossPulse.x = e.x; bossPulse.y = e.y;
 
-  setTimeout(() => {
-    if(cubeV2Ref===e && player.alive && (currentStage===2 || currentStage===3)) startCubeDialogue();
-  }, 450);
+  // Boss fight başladığında normal müziği durdur
+  musicGame.pause();
+  musicGame.currentTime = 0;
+  musicGame2.pause();
+  musicGame2.currentTime = 0;
+
+  // Restart durumunda diyalog atlanmışsa direkt divine müzik başlat
+  if(cubeDialogueDone && currentStage===3){
+    divineMusic.volume = musicVolume;
+    divineMusic.currentTime = 0;
+    tryPlayMusic(divineMusic, () => playingReal && !paused);
+  } else {
+    setTimeout(() => {
+      if(cubeV2Ref===e && player.alive && (currentStage===2 || currentStage===3)) startCubeDialogue();
+    }, 450);
+  }
 }
 
 function spawnCubeClones(){
