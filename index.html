@@ -291,7 +291,7 @@
       <div class="completedBadge" id="stage2Badge">✓ COMPLETED</div>
       <div class="bossReplayBadge" id="stage2BossBadge">BOSS · CUBE V2</div>
       <canvas class="stageThumb" id="thumb2" width="300" height="160"></canvas>
-      <div class="stageCardTitle">CUBE V2</div>
+      <div class="stageCardTitle" id="stage2Title">BOSS STAGE</div>
       <div class="lockOverlay"><span class="lockIcon">🔒</span>COMPLETE<br>STARTING TO BELIEVE<br>TO UNLOCK</div>
     </div>
   </div>
@@ -535,9 +535,10 @@ let bossPulse = { active: false, timer: 0, duration: 1, x: 0, y: 0 };
 let healPulseTimer = 0; // green ring around the player on a point-blank heal-kill
 
 // ---------- STAGE 2 BOSS (CUBE V2) ----------
-// Fires the moment stage 2 hits 200 kills: every current enemy dies at
-// once, and Cube V2 grows in the middle of the arena, like the recurring
-// MUTATED GREEN mutation but as a one-time, stage-specific fight.
+// Stage 2 is a pure boss-rush now: the moment the player wakes up in the
+// stage, every current enemy (there are none yet) is cleared, Cube V2
+// grows in immediately, and its dialogue plays right away. No 200-kill
+// grind before the fight anymore.
 const STAGE2_BOSS_KILL_THRESHOLD = 200;
 let stage2BossTriggered = false;
 let stage2BossFinished = false;
@@ -1450,9 +1451,9 @@ function update(dt){
   if(!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished && enemies.length === 0){
     finishStage1();
   }
-  if(!autoPilot && currentStage===2 && !stage2BossTriggered && player.totalKills >= STAGE2_BOSS_KILL_THRESHOLD){
-    triggerCubeV2();
-  }
+  // Stage 2 is a straight boss rush now: triggerCubeV2() is fired the
+  // moment the player wakes up in the stage (see launchStage), so there
+  // is no kill-count gate here anymore.
   // Stage completion (finishStage1) now handles its own transition -
   // showing the STAGE COMPLETE overlay and returning to the main menu -
   // so there is no automatic mid-run jump into the next stage anymore.
@@ -1469,11 +1470,12 @@ function update(dt){
   // After the Stage 1 global mutation fires, no more reinforcements spawn -
   // every enemy still alive at that moment has to be cleared to finish the stage.
   const stage1LastStand = (!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished);
-  const stage2BossFight = (!autoPilot && currentStage===2 && stage2BossTriggered && !stage2BossFinished);
+  // Stage 2 never spawns regular waves - it's the boss (and only the boss).
+  const stage2NoSpawns = (!autoPilot && currentStage===2);
   if(autoPilot){
     spawnCap = 100 + waveDifficulty;
     spawnInterval = Math.max(0.08, 0.35 - waveDifficulty*0.01);
-  } else if(stage1LastStand || stage2BossFight){
+  } else if(stage1LastStand || stage2NoSpawns){
     spawnCap = 0;
     spawnInterval = 999;
   } else {
@@ -1647,10 +1649,10 @@ function updateKnight(e, dt){
 }
 
 // ---------- CUBE V2 (stage 2 boss) ----------
-// Clears the arena and grows in on stage 2's 200th kill. Every attack is
-// a parryable orb burst; while its "deflect" phase is active, our raw
-// bullets bounce off it back at us instead of dealing damage (parried
-// shots still hurt it fine) - so parry is the real way to beat it.
+// Grows in immediately when stage 2 starts (see launchStage). Every
+// attack is a parryable orb burst; while its "deflect" phase is active,
+// our raw bullets bounce off it back at us instead of dealing damage
+// (parried shots still hurt it fine) - so parry is the real way to beat it.
 function triggerCubeV2(){
   if(stage2BossTriggered) return;
   stage2BossTriggered = true;
@@ -1856,7 +1858,7 @@ function finishStage1(){
 function showStageCompleteScreen(n){
   const el = document.getElementById('stageCompleteScreen');
   document.getElementById('stageCompleteTitle').textContent =
-    (n===1 ? 'STARTING TO BELIEVE' : 'ME') + ' COMPLETE';
+    (n===1 ? 'STARTING TO BELIEVE' : 'CUBE V2') + ' COMPLETE';
   document.getElementById('stageCompleteStats').textContent =
     `Total kills: ${player.totalKills}  •  Best streak: ${player.killStreak}`;
   el.classList.add('show');
@@ -2540,7 +2542,11 @@ function isStage2Unlocked(){
   return !!localStorage.getItem('kt_stage1_complete');
 }
 function updateStageLockUI(){
-  document.getElementById('stage2Card').classList.toggle('locked', !isStage2Unlocked());
+  const unlocked = isStage2Unlocked();
+  document.getElementById('stage2Card').classList.toggle('locked', !unlocked);
+  // Don't spoil the boss's name while the stage is still locked - only
+  // reveal "CUBE V2" once Stage 1 has actually been completed.
+  document.getElementById('stage2Title').textContent = unlocked ? 'CUBE V2' : 'BOSS STAGE';
 }
 function updateStageCompletionUI(){
   document.getElementById('stage1Badge').classList.toggle('show', !!localStorage.getItem('kt_stage1_complete'));
@@ -2576,6 +2582,13 @@ function launchStage(n){
   restartGame();
   playWakeUpEffect();
   tryPlayMusic(currentGameMusic(), () => gameStarted && playingReal);
+
+  // Stage 2 is a boss-rush stage: the moment the player wakes up here,
+  // Cube V2 grows in immediately and its dialogue plays right away -
+  // there's no regular wave-clearing before the fight anymore.
+  if(n===2){
+    triggerCubeV2();
+  }
 }
 document.getElementById('stage1Card').onclick=()=>launchStage(1);
 document.getElementById('stage2Card').onclick=()=>launchStage(2);
@@ -2845,10 +2858,13 @@ function playWakeUpEffect(){
 // 1) Main menu: bot plays behind the PLAY button, elevator music.
 // 2) Hitting PLAY fades the menu out and shows the stage grid - the bot
 //    KEEPS playing behind it, each card has its own live mini-preview.
+//    Stage 2's card stays labeled "BOSS STAGE" (name hidden) until Stage 1
+//    is completed, then reveals "CUBE V2".
 // 3) Clicking an unlocked stage card immediately launches that run: fades
 //    the grid out, plays the wake-up-from-black effect, starts the
 //    stage's music, and hands control to the player for real (HUD
-//    appears, fresh stats). No extra title/ENTER screen in between.
+//    appears, fresh stats). Stage 2 immediately triggers the Cube V2
+//    boss + dialogue - no extra title/ENTER screen or grind in between.
 document.getElementById('ui').style.display = 'none';
 
 // Flip the flag (and kill elevator) on pointerdown, which fires on the
