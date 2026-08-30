@@ -214,7 +214,7 @@
 #settingsScreen label{color:#fff !important;}
 #settingsScreen input[type="range"]{accent-color:#fff;}
 
-#tutorialOverlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;pointer-events:none;background:transparent;color:#fff;opacity:0;transition:opacity .45s ease;}
+#tutorialOverlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;pointer-events:none;background:#000;color:#fff;opacity:0;transition:opacity 1.2s ease;}
 #tutorialOverlay.show{display:flex;opacity:1;}
 #tutorialOverlay.wake{opacity:0;}
 #tutorialBox{text-align:center;font-size:26px;font-weight:bold;letter-spacing:3px;text-shadow:0 0 14px rgba(255,255,255,.55);max-width:720px;padding:30px;}
@@ -986,7 +986,7 @@ function registerKill(e, exploded){
   player.killStreak++;
   player.totalKills++;
   showBanner();
-  if(e.tutorial && tutorialState==='shoot'){
+  if(e.tutorial && (tutorialState==='shoot')){
     tutorialState='parryWait';
     tutorialHide();
     // Spawn a Glob that immediately sends one clear yellow orb toward the player.
@@ -1004,6 +1004,20 @@ let lastTime = performance.now();
 let banner = { text:'', timer:0 };
 
 function update(dt){
+  // Tutorial: while the first Green is alive, switch the instruction to DASH
+  // when it gets dangerously close. It disappears immediately once shot.
+  if(tutorialState==='shoot' && tutorialTarget && enemies.includes(tutorialTarget)){
+    const td=dist(tutorialTarget.x,tutorialTarget.y,player.x,player.y);
+    if(td<150){
+      if(tutorialTarget._dashPromptShown!==true){
+        tutorialTarget._dashPromptShown=true;
+        tutorialShow('Q TO DASH','');
+      }
+    }else if(tutorialTarget._dashPromptShown!==true){
+      const ov=document.getElementById('tutorialOverlay');
+      if(!ov.classList.contains('show')) tutorialShow('LEFT CLICK TO SHOOT','');
+    }
+  }
   // Ölüm efektleri oyun dururken de çalışır.
   for(let i=explosions.length-1;i>=0;i--){
     explosions[i].timer -= dt;
@@ -1175,19 +1189,17 @@ function update(dt){
     o.x += o.vx*dt;
     o.y += o.vy*dt;
 
-    // Tutorial: first slow the moment down, THEN show the parry instruction.
-    // This gives the player a short "oh shit..." slow-motion beat before
-    // the F TO PARRY prompt appears.
+    // Tutorial: freeze the moment down dramatically when the attack reaches parry range.
     if(o.tutorialParry && tutorialState==='parryWait' && dist(o.x,o.y,player.x,player.y)<180){
+      // Slow down FIRST. Only show the parry prompt after the slow-motion has begun.
       tutorialState='parrySlow';
       tutorialSlowMo=true;
       tutorialHide();
-
-      // Wait a little in slow motion before revealing the instruction.
       setTimeout(()=>{
-        if(!player.alive || !playingReal || tutorialState!=='parrySlow') return;
-        tutorialState='parry';
-        tutorialShow('F TO PARRY','');
+        if(tutorialState==='parrySlow' && player.alive && playingReal){
+          tutorialState='parry';
+          tutorialShow('F TO PARRY','');
+        }
       },450);
     }
 
@@ -2024,14 +2036,8 @@ function tutorialShow(title, hint=''){
 }
 function tutorialHide(){
   const ov=document.getElementById('tutorialOverlay');
-  ov.classList.remove('show');
-  ov.classList.add('wake');
-  setTimeout(()=>{
-    if(!ov.classList.contains('show')){
-      ov.style.display='none';
-      ov.classList.remove('wake');
-    }
-  },450);
+  ov.classList.remove('show','wake');
+  ov.style.display='none';
 }
 function startWakeTutorial(){
   // First: pure darkness, then the world slowly comes into view like waking up.
@@ -2044,7 +2050,11 @@ function startWakeTutorial(){
     const ang=Math.random()*Math.PI*2;
     const e={type:'green',x:player.x+Math.cos(ang)*420,y:player.y+Math.sin(ang)*420,radius:24,hp:60,maxHp:60,speed:70,state:'chase',stateTimer:0,dmg:0,lungeFrom:{x:0,y:0},lungeTo:{x:0,y:0},hitCooldown:0,tutorial:true};
     enemies.push(e); tutorialTarget=e;
-    setTimeout(()=>tutorialShow('LEFT CLICK TO SHOOT',''),900);
+    setTimeout(()=>{
+      if(tutorialState==='shoot' && tutorialTarget && enemies.includes(tutorialTarget)){
+        tutorialShow('LEFT CLICK TO SHOOT','');
+      }
+    },450);
   },1600);
 }
 
