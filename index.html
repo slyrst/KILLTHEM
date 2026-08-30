@@ -599,7 +599,14 @@ function mutateToBoss(e){
   e.growTimer = 2.6;
   e.growDuration = 2.6;
   e.speed *= 0.8;              // bigger body, a touch slower
-  e.dmg = Math.round(e.dmg * 1.8);
+
+  // Kaçıncı boss çıkışı olduğunu say (50=1., 100=2., 150=3. ...) ve her
+  // sonraki çıkışı bir öncekinin 2 katı zararlı yap (1x, 2x, 4x, 8x...).
+  const bossNumber = Math.round(nextBossThreshold / 50);
+  const dangerMultiplier = Math.pow(2, bossNumber - 1);
+  e.dangerMultiplier = dangerMultiplier;
+
+  e.dmg = Math.round(e.dmg * 1.8 * dangerMultiplier);
   e.orbBurstTimer = 1.8;       // first burst shortly after it wakes up
   e.orbBurstRate = 2.6;
 
@@ -625,13 +632,14 @@ function bossOrbBurst(e){
   const baseAng = Math.atan2(player.y - e.y, player.x - e.x);
   const count = 5;
   const totalSpread = 0.85;
+  const dmg = 16 * (e.dangerMultiplier || 1);
   for(let i=0;i<count;i++){
     const t = (i/(count-1)) - 0.5; // -0.5 .. 0.5
     const ang = baseAng + t*totalSpread;
     orbs.push({
       x: e.x, y: e.y,
       vx: Math.cos(ang)*820, vy: Math.sin(ang)*820,
-      dmg: 16,
+      dmg,
     });
   }
   screenShake.timer = Math.max(screenShake.timer, 0.22);
@@ -805,6 +813,7 @@ function update(dt){
     if(b.x<=0 || b.y<=0 || b.x>=WORLD.w || b.y>=WORLD.h){ bullets.splice(i,1); continue; }
     for(let j=enemies.length-1;j>=0;j--){
       const e = enemies[j];
+      if(e.mutating) continue; // mutasyon animasyonu bitmeden boss hasar alamaz - önce tam olarak "gelsin"
       if(dist(b.x,b.y,e.x,e.y) < e.radius + 6){
         // Shotgun pellet damage depends on how far THIS pellet traveled.
         let hitDamage = b.dmg;
@@ -872,6 +881,7 @@ function update(dt){
     if(o.parried){
       for(let j=enemies.length-1;j>=0;j--){
         const e=enemies[j];
+        if(e.mutating) continue; // mutasyon animasyonu bitmeden boss hasar alamaz
         if(dist(o.x,o.y,e.x,e.y) < e.radius+22){
           e.hp -= autoPilot ? e.maxHp * 5 : o.dmg;
           e.hitFlash = 0.22;
@@ -1046,6 +1056,7 @@ function spawnDeathPieces(){
 function damageEnemiesInExplosion(x,y,radius,damage){
   for(let j=enemies.length-1;j>=0;j--){
     const e=enemies[j];
+    if(e.mutating) continue; // mutasyon animasyonu bitmeden boss hasar alamaz
     const d=dist(x,y,e.x,e.y);
     if(d>radius+e.radius) continue;
     const scale=Math.max(0.35,1-d/(radius+e.radius));
