@@ -171,6 +171,30 @@
   .diffBtn[data-diff="normal"].active{ border-color:#ffdd33; color:#ffdd33; background:rgba(255,221,51,.12); box-shadow:0 0 14px rgba(255,221,51,.5); }
   .diffBtn[data-diff="brutal"].active{ border-color:#ff3333; color:#ff5555; background:rgba(255,51,51,.14); box-shadow:0 0 14px rgba(255,51,51,.55); }
 
+  /* ---------- stage complete overlay ---------- */
+  #stageCompleteScreen{
+    position:fixed;inset:0;z-index:75;
+    display:none;align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(0,10,4,.9);color:#fff;
+    pointer-events:none;
+    opacity:0;transition:opacity .5s ease;
+  }
+  #stageCompleteScreen.show{ display:flex; opacity:1; }
+  #stageCompleteScreen h1{
+    font-size:52px;color:#39ff6e;margin:0 0 14px;letter-spacing:5px;
+    text-shadow:0 0 24px #22ff66,0 0 60px #0aff44,3px 3px 0 #000;
+    text-align:center;
+  }
+  #stageCompleteScreen p{ font-size:18px;margin:4px;opacity:.85; }
+
+  .completedBadge{
+    position:absolute;top:8px;right:8px;z-index:2;
+    background:rgba(57,255,110,.16);border:1px solid #39ff6e;color:#39ff6e;
+    font-size:11px;font-weight:bold;letter-spacing:1px;
+    padding:4px 9px;border-radius:4px;display:none;
+  }
+  .completedBadge.show{ display:block; }
+
   /* ---------- pause / leave-confirm screen ---------- */
   #pauseScreen{
     position:fixed;inset:0;z-index:70;
@@ -247,10 +271,12 @@
   <h1>STAGES</h1>
   <div id="stageGrid">
     <div id="stage1Card" class="stageCard">
+      <div class="completedBadge" id="stage1Badge">✓ COMPLETED</div>
       <canvas class="stageThumb" id="thumb1" width="300" height="160"></canvas>
       <div class="stageCardTitle">STARTING TO BELIEVE</div>
     </div>
     <div id="stage2Card" class="stageCard locked">
+      <div class="completedBadge" id="stage2Badge">✓ COMPLETED</div>
       <canvas class="stageThumb" id="thumb2" width="300" height="160"></canvas>
       <div class="stageCardTitle">ME</div>
       <div class="lockOverlay"><span class="lockIcon">🔒</span>COMPLETE<br>STARTING TO BELIEVE<br>TO UNLOCK</div>
@@ -266,6 +292,10 @@
   </div>
 </div>
 <div id="wakeOverlay"></div>
+<div id="stageCompleteScreen">
+  <h1 id="stageCompleteTitle">STAGE COMPLETE</h1>
+  <p id="stageCompleteStats"></p>
+</div>
 
 <script>
 /* ======================================================================
@@ -314,6 +344,9 @@ const IMG = {
   bullet: loadImg('images/bullet.png'),
   orb:    loadImg('images/yellow-orb.png'), // rename/adjust this path if your file is named differently
   explosion: loadImg('images/explosion.png'),
+  knight: loadImg('images/knight.png'),
+  sword:  loadImg('images/sword.png'),
+  hard:   loadImg('images/hard.png'), // Cube V2 boss sprite
 };
 
 // ---------- SOUND EFFECTS ----------
@@ -473,7 +506,6 @@ document.querySelectorAll('.diffBtn').forEach(btn => {
 
 let currentStage = 1;
 let stage1Finished = false;
-let stageTransitionTimer = 0;
 let stageMutationTriggered = false;
 
 // ---------- BOSS (MUTATED GREEN) ----------
@@ -483,6 +515,15 @@ let bossActive = false;      // true while the boss health bar should be shown
 let screenShake = { timer: 0, duration: 1, strength: 0 };
 let bossPulse = { active: false, timer: 0, duration: 1, x: 0, y: 0 };
 let healPulseTimer = 0; // green ring around the player on a point-blank heal-kill
+
+// ---------- STAGE 2 BOSS (CUBE V2) ----------
+// Fires the moment stage 2 hits 200 kills: every current enemy dies at
+// once, and Cube V2 grows in the middle of the arena, like the recurring
+// MUTATED GREEN mutation but as a one-time, stage-specific fight.
+const STAGE2_BOSS_KILL_THRESHOLD = 200;
+let stage2BossTriggered = false;
+let stage2BossFinished = false;
+let cubeV2Ref = null;
 
 window.addEventListener('keydown', e => {
   if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
@@ -545,6 +586,7 @@ function backToMainMenu(){
 
   document.getElementById('ui').style.display = 'none';
   document.getElementById('deathScreen').style.display = 'none';
+  document.getElementById('stageCompleteScreen').classList.remove('show');
   stageSelect.classList.remove('show');
 
   playingReal = false;
@@ -844,7 +886,14 @@ function spawnEnemy(){
   else { x = camera.x + Math.random()*canvas.width; y = camera.y + canvas.height + margin; }
   x = clamp(x, 20, WORLD.w-20); y = clamp(y, 20, WORLD.h-20);
 
-  const type = Math.random() < 0.55 ? 'green' : 'glob';
+  let type;
+  if(currentStage === 2){
+    const r = Math.random();
+    type = r < 0.4 ? 'green' : (r < 0.7 ? 'glob' : 'knight');
+  } else {
+    type = Math.random() < 0.55 ? 'green' : 'glob';
+  }
+
   if(type === 'green'){
     const hp = 60 * DIFF.enemyHpMult;
     enemies.push({
@@ -853,12 +902,22 @@ function spawnEnemy(){
       lungeFrom:{x:0,y:0}, lungeTo:{x:0,y:0},
       hitCooldown:0,
     });
-  } else {
+  } else if(type === 'glob'){
     const hp = 40 * DIFF.enemyHpMult;
     enemies.push({
       type:'glob', x, y, radius:26, hp, maxHp:hp, speed: 70,
       state:'kite', fireTimer: 0.8 + Math.random()*0.5,
       preferredMin: 260, preferredMax: 420,
+    });
+  } else {
+    // Knight: melee bruiser that dash-attacks the player and can parry
+    // shots back at us with its sword before hopping away again.
+    const hp = 90 * DIFF.enemyHpMult;
+    enemies.push({
+      type:'knight', x, y, radius:26, hp, maxHp:hp, speed: 150 + waveDifficulty*4,
+      state:'chase', stateTimer:0, dmg: 24,
+      dashFrom:{x:0,y:0}, dashTo:{x:0,y:0}, retreatDir:{x:0,y:0},
+      hitCooldown:0, parryFlash:0,
     });
   }
 }
@@ -941,7 +1000,7 @@ function registerKill(e, exploded){
   // tetiklemez; rastgele başka bir düşman asla boss'a çevrilmez - eşiği
   // geçtikten sonraki ilk green kill'i gelene kadar beklenir. Eşik her
   // tetiklemede +50 artar, böylece boss arasıra tekrar tekrar çıkar.
-  if(!bossActive && willBeKillNum >= nextBossThreshold && e.type === 'green'){
+  if(!bossActive && currentStage!==2 && willBeKillNum >= nextBossThreshold && e.type === 'green'){
     mutateToBoss(e);
     nextBossThreshold += 100;
     // Bu kill iptal - enemy ölmüyor, mutasyona giriyor.
@@ -951,6 +1010,18 @@ function registerKill(e, exploded){
   if(e === bossEnemyRef){
     bossActive = false;
     bossEnemyRef = null;
+  }
+
+  if(e.type === 'cubev2'){
+    cubeV2Ref = null;
+    if(currentStage===2 && !stage2BossFinished){
+      stage2BossFinished = true;
+      localStorage.setItem('kt_stage2_complete','1');
+      banner.text = 'CUBE V2 DESTROYED'; banner.timer = 2.2;
+      screenShake = { timer:1.2, duration:1.2, strength:18 };
+      for(let n=0;n<30;n++) spawnExplosion(e.x+(Math.random()-.5)*300, e.y+(Math.random()-.5)*300, 1+Math.random()*1.6);
+      setTimeout(() => { if(player.alive) showStageCompleteScreen(2); }, 900);
+    }
   }
 
   // Point-blank kill: if the enemy died almost inside the player (barely
@@ -1095,6 +1166,16 @@ function update(dt){
       const e = enemies[j];
       if(e.mutating) continue; // mutasyon animasyonu bitmeden boss hasar alamaz - önce tam olarak "gelsin"
       if(dist(b.x,b.y,e.x,e.y) < e.radius + 6){
+        // Cube V2 (while its deflect phase is up) and a Knight with its
+        // sword raised knock the bullet straight back at the player as a
+        // parryable hazard orb, instead of taking damage from it.
+        if(!autoPilot && !b.explosive && ((e.type==='cubev2' && e.deflectActive) || (e.type==='knight' && e.parryFlash>0))){
+          const backAng = Math.atan2(player.y-e.y, player.x-e.x);
+          orbs.push({x:e.x,y:e.y,vx:Math.cos(backAng)*820,vy:Math.sin(backAng)*820, dmg: Math.max(14, b.dmg*1.2)});
+          bullets.splice(i,1);
+          spawnExplosion(b.x,b.y,0.45);
+          break;
+        }
         // Shotgun pellet damage depends on how far THIS pellet traveled.
         let hitDamage = b.dmg;
         if(b.type === 'shotgun'){
@@ -1184,7 +1265,9 @@ function update(dt){
   for(const e of enemies){
     if(e.hitFlash > 0) e.hitFlash -= dt;
     if(e.type === 'green') updateGreen(e, dt);
-    else updateGlob(e, dt);
+    else if(e.type === 'glob') updateGlob(e, dt);
+    else if(e.type === 'knight') updateKnight(e, dt);
+    else if(e.type === 'cubev2') updateCubeV2(e, dt);
   }
 
   // ----- stage progression -----
@@ -1194,19 +1277,12 @@ function update(dt){
   if(!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished && enemies.length === 0){
     finishStage1();
   }
-  if(stageTransitionTimer>0){
-    stageTransitionTimer-=dt;
-    if(stageTransitionTimer<=0 && stage1Finished){
-      currentStage=2;
-      stageMutationTriggered=false;
-      stage1Finished=false;
-      player.totalKills=0; player.killStreak=0;
-      enemies=[]; bullets=[]; orbs=[];
-      banner.text='STAGE 2'; banner.timer=2;
-      if(IMG.map2.loaded) fitWorldToMapImg(IMG.map2);
-      switchToStage2Music();
-    }
+  if(!autoPilot && currentStage===2 && !stage2BossTriggered && player.totalKills >= STAGE2_BOSS_KILL_THRESHOLD){
+    triggerCubeV2();
   }
+  // Stage completion (finishStage1) now handles its own transition -
+  // showing the STAGE COMPLETE overlay and returning to the main menu -
+  // so there is no automatic mid-run jump into the next stage anymore.
 
   // ----- spawn -----
   // Ana menüde arka planda gösteri yapıldığı için en baştan çok kalabalık
@@ -1220,10 +1296,11 @@ function update(dt){
   // After the Stage 1 global mutation fires, no more reinforcements spawn -
   // every enemy still alive at that moment has to be cleared to finish the stage.
   const stage1LastStand = (!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished);
+  const stage2BossFight = (!autoPilot && currentStage===2 && stage2BossTriggered && !stage2BossFinished);
   if(autoPilot){
     spawnCap = 100 + waveDifficulty;
     spawnInterval = Math.max(0.08, 0.35 - waveDifficulty*0.01);
-  } else if(stage1LastStand){
+  } else if(stage1LastStand || stage2BossFight){
     spawnCap = 0;
     spawnInterval = 999;
   } else {
@@ -1320,6 +1397,173 @@ function updateGreen(e, dt){
   }
 }
 
+// ---------- KNIGHT (stage 2 melee bruiser) ----------
+// chase -> telegraph -> dash (attacks) -> retreat (hops back) -> chase.
+// While chasing, it occasionally raises its sword (parryFlash) and any
+// player bullet that touches it during that window gets knocked back at
+// the player as a hazard orb instead of just damaging it.
+function updateKnight(e, dt){
+  if(e.hitCooldown>0) e.hitCooldown -= dt;
+  if(e.parryFlash>0) e.parryFlash -= dt;
+
+  const d = dist(e.x,e.y,player.x,player.y);
+
+  if(e.state === 'chase'){
+    if(d > 70){
+      const ang = Math.atan2(player.y-e.y, player.x-e.x);
+      e.x += Math.cos(ang)*e.speed*dt;
+      e.y += Math.sin(ang)*e.speed*dt;
+    }
+
+    // occasionally raises its sword to try to deflect an incoming shot
+    if(e.parryFlash<=0){
+      for(const b of bullets){
+        if(dist(b.x,b.y,e.x,e.y) < 140 && Math.random()<0.03){
+          e.parryFlash = 0.24;
+          break;
+        }
+      }
+    }
+
+    if(d < 110){
+      e.state = 'telegraph';
+      e.stateTimer = 0.38;
+    }
+    if(d < e.radius + player.radius && player.invuln<=0 && e.hitCooldown<=0){
+      damagePlayer(10);
+      e.hitCooldown = 0.7;
+    }
+  } else if(e.state === 'telegraph'){
+    e.stateTimer -= dt;
+    if(e.stateTimer <= 0){
+      e.state = 'dash';
+      e.stateTimer = 0.2;
+      e.dashFrom = {x:e.x,y:e.y};
+      e.dashTo = {x:player.x,y:player.y};
+    }
+  } else if(e.state === 'dash'){
+    e.stateTimer -= dt;
+    const t = 1 - Math.max(0,e.stateTimer)/0.2;
+    e.x = e.dashFrom.x + (e.dashTo.x - e.dashFrom.x)*t;
+    e.y = e.dashFrom.y + (e.dashTo.y - e.dashFrom.y)*t;
+    if(dist(e.x,e.y,player.x,player.y) < e.radius + player.radius && player.invuln<=0 && e.hitCooldown<=0){
+      damagePlayer(e.dmg);
+      e.hitCooldown = 1.0;
+    }
+    if(e.stateTimer <= 0){
+      e.state = 'retreat';
+      e.stateTimer = 0.32;
+      const backAng = Math.atan2(e.y-player.y, e.x-player.x);
+      e.retreatDir = {x:Math.cos(backAng), y:Math.sin(backAng)};
+    }
+  } else if(e.state === 'retreat'){
+    e.stateTimer -= dt;
+    e.x += e.retreatDir.x * e.speed * 1.6 * dt;
+    e.y += e.retreatDir.y * e.speed * 1.6 * dt;
+    if(e.stateTimer <= 0){
+      e.state = 'chase';
+      e.stateTimer = 0;
+    }
+  }
+
+  e.x = clamp(e.x, e.radius, WORLD.w-e.radius);
+  e.y = clamp(e.y, e.radius, WORLD.h-e.radius);
+}
+
+// ---------- CUBE V2 (stage 2 boss) ----------
+// Clears the arena and grows in on stage 2's 200th kill. Every attack is
+// a parryable orb burst; while its "deflect" phase is active, our raw
+// bullets bounce off it back at us instead of dealing damage (parried
+// shots still hurt it fine) - so parry is the real way to beat it.
+function triggerCubeV2(){
+  if(stage2BossTriggered) return;
+  stage2BossTriggered = true;
+  banner.text = 'CUBE V2'; banner.timer = 2.4;
+
+  for(const en of enemies) spawnExplosion(en.x, en.y, 1.2);
+  enemies = [];
+  orbs = [];
+
+  screenShake = { timer:1.2, duration:1.2, strength:20 };
+
+  const cx = player.x;
+  const cy = player.y - 260;
+  const baseR = 40;
+  const ghp = 900 * DIFF.bossHpMult;
+  const e = {
+    type:'cubev2', x:cx, y:cy, radius:baseR, hp:ghp, maxHp:ghp,
+    isBoss:true, bossName:'CUBE V2',
+    baseRadius:baseR, targetRadius: baseR*3.2,
+    mutating:true, growTimer:2.8, growDuration:2.8,
+    speed:60, dmg: 40,
+    orbBurstTimer: 2.0, orbBurstRate: 2.4,
+    hitFlash:0, deflectActive:false, deflectTimer: 3.4,
+  };
+  enemies.push(e);
+  cubeV2Ref = e;
+  bossEnemyRef = e;
+  bossActive = true;
+
+  bossPulse.active = true;
+  bossPulse.timer = e.growDuration;
+  bossPulse.duration = e.growDuration;
+  bossPulse.x = e.x; bossPulse.y = e.y;
+}
+
+function cubeV2OrbBurst(e){
+  const baseAng = Math.atan2(player.y - e.y, player.x - e.x);
+  const count = 7;
+  const totalSpread = 1.15;
+  const dmg = e.dmg;
+  for(let i=0;i<count;i++){
+    const t = (i/(count-1)) - 0.5;
+    const ang = baseAng + t*totalSpread;
+    orbs.push({ x: e.x, y: e.y, vx: Math.cos(ang)*760, vy: Math.sin(ang)*760, dmg });
+  }
+  screenShake.timer = Math.max(screenShake.timer, 0.2);
+  screenShake.duration = Math.max(screenShake.duration, 0.2);
+  screenShake.strength = Math.max(screenShake.strength, 7);
+}
+
+function updateCubeV2(e, dt){
+  if(e.mutating){
+    e.growTimer -= dt;
+    const t = clamp(1 - Math.max(0,e.growTimer)/e.growDuration, 0, 1);
+    const eased = 1 - Math.pow(1-t, 2);
+    e.radius = e.baseRadius + (e.targetRadius - e.baseRadius) * eased;
+    if(e.growTimer <= 0){
+      e.mutating = false;
+      e.radius = e.targetRadius;
+    }
+    return;
+  }
+
+  const d = dist(e.x,e.y,player.x,player.y);
+  if(d > 420){
+    const ang = Math.atan2(player.y-e.y, player.x-e.x);
+    e.x += Math.cos(ang)*e.speed*dt;
+    e.y += Math.sin(ang)*e.speed*dt;
+  } else if(d < 260){
+    const ang = Math.atan2(e.y-player.y, e.x-player.x);
+    e.x += Math.cos(ang)*e.speed*dt;
+    e.y += Math.sin(ang)*e.speed*dt;
+  }
+  e.x = clamp(e.x, e.radius, WORLD.w-e.radius);
+  e.y = clamp(e.y, e.radius, WORLD.h-e.radius);
+
+  e.deflectTimer -= dt;
+  if(e.deflectTimer <= 0){
+    e.deflectActive = !e.deflectActive;
+    e.deflectTimer = e.deflectActive ? 2.0 : 3.2;
+  }
+
+  e.orbBurstTimer -= dt;
+  if(e.orbBurstTimer <= 0){
+    cubeV2OrbBurst(e);
+    e.orbBurstTimer = e.orbBurstRate;
+  }
+}
+
 function mutateGlobStage1(e){
   if(e.isStageMutation) return;
   e.isStageMutation = true;
@@ -1342,11 +1586,27 @@ function triggerStage1Mutation(){
 }
 function finishStage1(){
   if(stage1Finished) return;
-  stage1Finished=true; stageTransitionTimer=2.8;
+  stage1Finished=true;
   banner.text='STAGE 1 COMPLETE'; banner.timer=2.8;
   for(let n=0;n<45;n++) spawnExplosion(player.x+(Math.random()-.5)*canvas.width, player.y+(Math.random()-.5)*canvas.height, 1+Math.random()*1.8);
   screenShake={timer:1.4,duration:1.4,strength:22};
   localStorage.setItem('kt_stage1_complete','1');
+  showStageCompleteScreen(1);
+}
+
+// Shows the full-screen "STAGE COMPLETE" overlay for a beat, then sends
+// the player back to the main menu (bot takes back over, elevator music).
+function showStageCompleteScreen(n){
+  const el = document.getElementById('stageCompleteScreen');
+  document.getElementById('stageCompleteTitle').textContent =
+    (n===1 ? 'STARTING TO BELIEVE' : 'ME') + ' COMPLETE';
+  document.getElementById('stageCompleteStats').textContent =
+    `Total kills: ${player.totalKills}  •  Best streak: ${player.killStreak}`;
+  el.classList.add('show');
+  setTimeout(() => {
+    el.classList.remove('show');
+    backToMainMenu();
+  }, 2600);
 }
 function updateGlob(e, dt){
   const d = dist(e.x,e.y,player.x,player.y);
@@ -1437,7 +1697,10 @@ function damageEnemiesInExplosion(x,y,radius,damage){
 }
 
 function spawnCorpsePieces(e, exploded=false){
-  const img = e.type === 'glob' ? IMG.glob : IMG.green;
+  const img = e.type === 'glob' ? IMG.glob
+    : e.type === 'knight' ? IMG.knight
+    : e.type === 'cubev2' ? IMG.hard
+    : IMG.green;
   const fullSize = e.radius*2 + 14;
   const cols = 3, rows = 3;
   const pieceW = fullSize / cols;
@@ -1784,9 +2047,92 @@ function drawPlayer(){
   drawRotatedImage(weaponImg, gx, gy, weapon==='shotgun'?58:46, weapon==='shotgun'?58:46, gunAngle, '#888888', weapon==='shotgun'?'SHOTGUN':'GUN');
 }
 
+function drawKnightEnemy(e, sx, sy){
+  const size = e.radius*2 + 14;
+
+  // base art faces LEFT by default; flip when it should face right.
+  let faceAng;
+  if(e.state === 'dash') faceAng = Math.atan2(e.dashTo.y-e.dashFrom.y, e.dashTo.x-e.dashFrom.x);
+  else faceAng = Math.atan2(player.y-e.y, player.x-e.x);
+  const facingRight = Math.cos(faceAng) >= 0;
+
+  let flash = 0;
+  if(e.state === 'telegraph') flash = 0.5 + 0.5*Math.sin(performance.now()/40);
+
+  ctx.save();
+  ctx.translate(sx, sy);
+  if(facingRight) ctx.scale(-1, 1);
+  if(flash > 0){ ctx.shadowColor = '#ff2222'; ctx.shadowBlur = 18*flash; }
+  if(IMG.knight.loaded){
+    ctx.drawImage(IMG.knight, -size/2, -size/2, size, size);
+  } else {
+    drawPlaceholder(0, 0, size, size, '#8899aa', 'KNIGHT', 0);
+  }
+  // sword held out in front (toward the facing side)
+  const swordSize = size*0.62;
+  if(IMG.sword.loaded){
+    ctx.drawImage(IMG.sword, size*0.06, -swordSize*0.5, swordSize, swordSize);
+  }
+  ctx.restore();
+
+  // shield-up glint = about to deflect a shot
+  if(e.parryFlash > 0){
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, e.parryFlash/0.24);
+    ctx.strokeStyle = '#bfe8ff';
+    ctx.lineWidth = 4;
+    ctx.shadowColor = '#bfe8ff'; ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(sx, sy, e.radius+14, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  if(e.hitFlash > 0){
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.6, e.hitFlash/0.16);
+    ctx.fillStyle = '#ff2222';
+    ctx.beginPath(); ctx.arc(sx, sy, size/2, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawCubeV2(e, sx, sy){
+  const size = e.radius*2 + 14;
+  const hue = (performance.now()/8) % 360;
+
+  ctx.save();
+  if(e.deflectActive){
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 30;
+  } else {
+    ctx.shadowColor = `hsl(${hue},100%,60%)`;
+    ctx.shadowBlur = 22;
+  }
+  if(IMG.hard.loaded){
+    ctx.filter = `hue-rotate(${hue}deg) saturate(2.4) brightness(1.05)`;
+    ctx.drawImage(IMG.hard, sx-size/2, sy-size/2, size, size);
+    ctx.filter = 'none';
+  } else {
+    drawPlaceholder(sx, sy, size, size, `hsl(${hue},90%,55%)`, 'CUBE V2', 0);
+  }
+  ctx.restore();
+
+  if(e.hitFlash > 0){
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.55, e.hitFlash/0.16);
+    ctx.fillStyle = '#ff2222';
+    ctx.beginPath(); ctx.arc(sx, sy, size/2, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+
 function drawEnemy(e){
   const sx = e.x - camera.x, sy = e.y - camera.y;
   if(sx < -80 || sy < -80 || sx > canvas.width+80 || sy > canvas.height+80) return;
+
+  if(e.type === 'knight'){ drawKnightEnemy(e, sx, sy); return; }
+  if(e.type === 'cubev2'){ drawCubeV2(e, sx, sy); return; }
 
   const img = e.type === 'green' ? IMG.green : IMG.glob;
   const size = e.radius*2 + 14;
@@ -1862,7 +2208,9 @@ function restartGame(){
   lastParriedOrbPos = null; parryPulse.active = false;
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
-  nextBossThreshold = 100; bossEnemyRef = null; stageTransitionTimer=0; stageMutationTriggered=false; stage1Finished=false; bossActive = false;
+  weapon = 'gun'; // every level starts back on weapon 1
+  nextBossThreshold = 100; bossEnemyRef = null; stageMutationTriggered=false; stage1Finished=false; bossActive = false;
+  stage2BossTriggered = false; stage2BossFinished = false; cubeV2Ref = null;
   screenShake = { timer:0, duration:1, strength:0 };
   bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
   healPulseTimer = 0;
@@ -1900,9 +2248,14 @@ function isStage2Unlocked(){
 function updateStageLockUI(){
   document.getElementById('stage2Card').classList.toggle('locked', !isStage2Unlocked());
 }
+function updateStageCompletionUI(){
+  document.getElementById('stage1Badge').classList.toggle('show', !!localStorage.getItem('kt_stage1_complete'));
+  document.getElementById('stage2Badge').classList.toggle('show', !!localStorage.getItem('kt_stage2_complete'));
+}
 
 function openStageSelect(){
   updateStageLockUI();
+  updateStageCompletionUI();
   document.getElementById('mainMenu').classList.add('hidden');
   stageSelect.classList.add('show');
 }
