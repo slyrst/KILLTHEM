@@ -261,7 +261,7 @@ let botStrafeTimer = 2;
 let botMoveX = 0, botMoveY = 0; // smoothed movement vector, avoids jittery direction snaps
 
 // ---------- BOSS (MUTATED GREEN) ----------
-let bossTriggered = false;   // true once the 50th-kill mutation has fired
+let nextBossThreshold = 50;  // kill count needed for the NEXT mutation - increments by 50 each time, so the boss keeps coming back (arasıra çıksın)
 let bossEnemyRef = null;     // reference to the enemy object that is/was the boss
 let bossActive = false;      // true while the boss health bar should be shown
 let screenShake = { timer: 0, duration: 1, strength: 0 };
@@ -648,19 +648,16 @@ function bossOrbBurst(e){
 function registerKill(e, exploded){
   const willBeKillNum = player.totalKills + 1;
 
-  if(willBeKillNum === 50 && !bossTriggered){
-    bossTriggered = true;
-    let target = e;
-    if(target.type !== 'green'){
-      const greens = enemies.filter(x => x.type === 'green' && x !== e && !x.isBoss);
-      if(greens.length) target = greens[Math.floor(Math.random()*greens.length)];
-    }
-    mutateToBoss(target);
-    if(target === e){
-      // This kill is cancelled - the enemy mutates instead of dying.
-      return false;
-    }
-    // A different enemy mutated; this one still dies normally.
+  // nextBossThreshold'a ulaşıldıktan sonra, mutasyonu SADECE bir GREEN
+  // kill'i tetikleyebilir. Glob kill'i sayaç değerini artırır ama
+  // tetiklemez; rastgele başka bir düşman asla boss'a çevrilmez - eşiği
+  // geçtikten sonraki ilk green kill'i gelene kadar beklenir. Eşik her
+  // tetiklemede +50 artar, böylece boss arasıra tekrar tekrar çıkar.
+  if(!bossActive && willBeKillNum >= nextBossThreshold && e.type === 'green'){
+    mutateToBoss(e);
+    nextBossThreshold += 50;
+    // Bu kill iptal - enemy ölmüyor, mutasyona giriyor.
+    return false;
   }
 
   if(e === bossEnemyRef){
@@ -824,6 +821,7 @@ function update(dt){
           bullets.splice(i,1);
           break;
         }
+        if(autoPilot) hitDamage = e.maxHp * 5; // menüde her vuruş one-tap kill (boss dahil)
         hitDamage *= (b.dmgMultiplier || 1);
         e.hp -= hitDamage;
         e.hitFlash = 0.16;
@@ -875,7 +873,7 @@ function update(dt){
       for(let j=enemies.length-1;j>=0;j--){
         const e=enemies[j];
         if(dist(o.x,o.y,e.x,e.y) < e.radius+22){
-          e.hp -= o.dmg;
+          e.hp -= autoPilot ? e.maxHp * 5 : o.dmg;
           e.hitFlash = 0.22;
           spawnExplosion(e.x,e.y,1.0);
           orbs.splice(i,1);
@@ -900,10 +898,15 @@ function update(dt){
   }
 
   // ----- spawn -----
+  // Ana menüde arka planda gösteri yapıldığı için çok daha kalabalık ve
+  // çok daha hızlı spawn olur (normal oyunun ~10 katı kadar düşman).
   spawnTimer -= dt;
-  if(spawnTimer <= 0 && enemies.length < 10 + waveDifficulty){
+  const spawnCap = (autoPilot ? 100 : 10) + waveDifficulty;
+  if(spawnTimer <= 0 && enemies.length < spawnCap){
     spawnEnemy();
-    spawnTimer = Math.max(0.6, 2.2 - waveDifficulty*0.08);
+    spawnTimer = autoPilot
+      ? Math.max(0.08, 0.35 - waveDifficulty*0.01)
+      : Math.max(0.6, 2.2 - waveDifficulty*0.08);
     waveDifficulty += 0.05;
   }
 
@@ -1095,16 +1098,16 @@ function spawnCorpsePieces(e, exploded=false){
 
 function damagePlayer(amount){
   if(player.invuln > 0 || !player.alive) return;
+  if(autoPilot){
+    // Ana menüdeki bot ölümsüz - hiç hasar almaz, streak hiç kırılmaz.
+    player.invuln = 0.15;
+    return;
+  }
   player.hp -= amount;
   player.killStreak = 0; // getting hit resets the streak -> body reverts to nice.png
   player.invuln = 0.5;
   if(player.hp <= 0){
     player.hp = 0;
-    if(autoPilot){
-      // background menu demo: just quietly loop, no death screen
-      restartGame();
-      return;
-    }
     player.alive = false;
     spawnDeathPieces();
     showDeathScreen();
@@ -1479,7 +1482,7 @@ function restartGame(){
   lastParriedOrbPos = null; parryPulse.active = false;
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
-  bossTriggered = false; bossEnemyRef = null; bossActive = false;
+  nextBossThreshold = 50; bossEnemyRef = null; bossActive = false;
   screenShake = { timer:0, duration:1, strength:0 };
   bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
   healPulseTimer = 0;
@@ -1524,7 +1527,8 @@ document.getElementById('playBtn').addEventListener('click', () => {
   const menuEl = document.getElementById('mainMenu');
   menuEl.classList.add('fade-out');
 
-  musicElevator.volume = 0.12; // keep playing under the game music, just quiet
+  musicElevator.pause();
+  musicElevator.currentTime = 0;
   tryPlayMusic(musicGame);
 
   setTimeout(() => {
