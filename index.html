@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>KILLTHEM</title>
 <style>
-  html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Trebuchet MS',Arial,sans-serif;user-select:none;-webkit-user-select:none;-moz-user-select:none;border:none;outline:none;} canvas{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:block;}
+  html{margin:0;padding:0;overflow:hidden;background:#000;border:none;outline:none;} body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Trebuchet MS',Arial,sans-serif;user-select:none;-webkit-user-select:none;-moz-user-select:none;border:none;outline:none;position:fixed;top:0;left:0;width:100%;height:100%;} canvas{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:block;position:fixed;top:0;left:0;}
   #game{display:block;cursor:crosshair;}
   #ui{
     position:fixed;top:0;left:0;width:100%;height:100%;
@@ -603,12 +603,16 @@ function togglePause(){
     paused = true;
     document.getElementById('pauseScreen').classList.add('show');
     currentGameMusic().pause();
+    divineMusic.pause();
   }
 }
 function resumeGame(){
   paused = false;
   document.getElementById('pauseScreen').classList.remove('show');
-  if(playingReal) tryPlayMusic(currentGameMusic(), () => playingReal && !paused);
+  if(playingReal){
+    tryPlayMusic(currentGameMusic(), () => playingReal && !paused);
+    tryPlayMusic(divineMusic, () => playingReal && !paused && cubeDialogueDone);
+  }
 }
 
 // LEAVE -> back to the main menu, bot takes back over.
