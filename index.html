@@ -185,6 +185,39 @@
     text-align:center;line-height:1.6;margin-bottom:36px;text-shadow:2px 2px 4px #000;
   }
 
+
+  /* ---------- stage progress / completion ---------- */
+  #stageProgress{
+    margin:0 0 24px;
+    color:#fff;
+    font-size:16px;
+    letter-spacing:3px;
+    text-align:center;
+    opacity:.9;
+  }
+  #stageBadge{
+    position:absolute;
+    top:22px;right:24px;
+    padding:8px 12px;
+    border:2px solid rgba(255,255,255,.45);
+    background:rgba(0,0,0,.4);
+    font-size:13px;
+    letter-spacing:2px;
+    color:#fff;
+  }
+  #stageComplete{
+    position:fixed;inset:0;z-index:90;
+    display:none;align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(0,0,0,.78);
+    pointer-events:auto;
+  }
+  #stageComplete.show{display:flex;}
+  #stageComplete h2{
+    margin:0 0 10px;color:#ffdd33;font-size:58px;letter-spacing:7px;
+    text-shadow:0 0 24px #ff8800,3px 3px #000;
+  }
+  #stageComplete p{font-size:20px;margin:8px 0 28px;}
+
   /* ---------- pause / leave-confirm screen ---------- */
   #pauseScreen{
     position:fixed;inset:0;z-index:70;
@@ -240,7 +273,13 @@
   <div class="stageLabel">STAGE 1</div>
   <div class="stageTitle">MATRIX</div>
   <div class="stageSubtitle" id="stageSubtitle"></div>
+  <div id="stageProgress"></div>
   <button id="enterBtn" class="bigBtn">ENTER</button>
+</div>
+<div id="stageComplete">
+  <h2 id="completeTitle">STAGE 1 COMPLETE</h2>
+  <p id="completeText">100 KILLS — SIMULATION DESTROYED</p>
+  <button id="completeBtn" class="bigBtn">STAGE 2</button>
 </div>
 <div id="pauseScreen">
   <div id="pauseTitle">LEAVE THE SIMULATION?</div>
@@ -399,10 +438,23 @@ let deathPieces = [];
 let corpsePieces = [];
 
 // ---------- MAIN MENU / STAGES INTRO / PAUSE STATE ----------
-let inMenu = true;     // true until the player has fully entered the real game
-let inStages = false;  // true while the STAGE 1 / MATRIX intro screen is up
-let playingReal = false; // true only once the player has hit ENTER and is in control
-let paused = false;    // true while the ESC "leave simulation?" screen is up
+let inMenu = true;
+let inStages = false;
+let playingReal = false;
+let paused = false;
+let currentStage = 1;
+let stageEnding = false;
+let stageEndingTimer = 0;
+let stage2Unlocked = localStorage.getItem('kt_stage2_unlocked') === '1';
+let selectedDifficulty = localStorage.getItem('kt_difficulty') || 'normal';
+localStorage.setItem('kt_difficulty', selectedDifficulty);
+let playerShotCount = 0;
+let globMutationTimer = 0;
+let globMutationShots = 0;
+let globMutationActive = false;
+let weaponCombo = [];
+let secretComboTimer = 0;
+let secretFlash = 0;
 let autoPilot = true;  // true while an AI bot is driving the player (menu + stages background)
 let botAimAngle = 0;
 let botFireTimer = 0.4;
@@ -421,10 +473,12 @@ const DIFFICULTIES = {
   normal: { bossHpMult:1,   enemyHpMult:1,   playerDmgMult:1,   parryRangeMult:1,   parryAngleMult:1   },
   brutal: { bossHpMult:2,   enemyHpMult:2,   playerDmgMult:0.5, parryRangeMult:0.5, parryAngleMult:0.6 },
 };
-let DIFF = DIFFICULTIES.normal;
+let DIFF = DIFFICULTIES[selectedDifficulty] || DIFFICULTIES.normal;
 
 const diffToggleBtn = document.getElementById('diffToggleBtn');
 const diffOptions = document.getElementById('diffOptions');
+diffToggleBtn.textContent = 'DIFFICULTY: ' + selectedDifficulty.toUpperCase();
+document.querySelectorAll('.diffBtn').forEach(b => b.classList.toggle('active', b.dataset.diff === selectedDifficulty));
 
 diffToggleBtn.addEventListener('click', () => {
   diffOptions.classList.toggle('show');
@@ -456,11 +510,163 @@ let screenShake = { timer: 0, duration: 1, strength: 0 };
 let bossPulse = { active: false, timer: 0, duration: 1, x: 0, y: 0 };
 let healPulseTimer = 0; // green ring around the player on a point-blank heal-kill
 
+
+
+function triggerSecret(name){
+  secretFlash=1.6;
+  banner.text=name;
+  banner.timer=1.5;
+  screenShake.timer=.45; screenShake.duration=.45; screenShake.strength=12;
+  const a=Math.atan2(mouseWorld().y-player.y,mouseWorld().x-player.x);
+  if(name==='DUAL CORE'){
+    for(let i=0;i<8;i++){
+      const ang=a+(i-3.5)*0.055;
+      bullets.push({x:player.x+Math.cos(ang)*28,y:player.y+Math.sin(ang)*28,
+        vx:Math.cos(ang)*1050,vy:Math.sin(ang)*1050,dmg:42*DIFF.playerDmgMult,type:'secret',life:1.6});
+    }
+  } else if(name==='GLOB RIPPER'){
+    for(let i=0;i<10;i++){
+      const ang=a+(i-4.5)*0.035;
+      bullets.push({x:player.x+Math.cos(ang)*28,y:player.y+Math.sin(ang)*28,
+        vx:Math.cos(ang)*1180,vy:Math.sin(ang)*1180,dmg:30*DIFF.playerDmgMult,type:'secret',life:1.2});
+    }
+    for(const e of enemies){
+      if(e.type==='glob'){
+        e.hp -= 90*DIFF.playerDmgMult;
+        e.hitFlash=.3;
+      }
+    }
+  } else if(name==='MUTATION BREAKER'){
+    applyGlobMutation();
+    for(const e of enemies){
+      e.hp -= 120*DIFF.playerDmgMult;
+      e.hitFlash=.35;
+    }
+  }
+}
+function recordWeaponCombo(w){
+  const now=performance.now();
+  weaponCombo.push({w,t:now});
+  weaponCombo=weaponCombo.filter(x=>now-x.t<700);
+  const seq=weaponCombo.map(x=>x.w).join('');
+  if(seq.endsWith('gunshotgun')){ triggerSecret('DUAL CORE'); weaponCombo=[]; }
+  else if(seq.endsWith('shotgungun')){ triggerSecret('GLOB RIPPER'); weaponCombo=[]; }
+  else if(seq.endsWith('gunshotgungunshotgun')){ triggerSecret('MUTATION BREAKER'); weaponCombo=[]; }
+}
+
+function saveProgress(){
+  localStorage.setItem('kt_difficulty', selectedDifficulty);
+  localStorage.setItem('kt_stage2_unlocked', stage2Unlocked ? '1' : '0');
+}
+function configureStageScreen(stage){
+  currentStage = stage;
+  const label = document.querySelector('#stagesScreen .stageLabel');
+  const title = document.querySelector('#stagesScreen .stageTitle');
+  const sub = document.getElementById('stageSubtitle');
+  const progress = document.getElementById('stageProgress');
+  const enter = document.getElementById('enterBtn');
+  if(stage === 1){
+    label.textContent = 'STAGE 1';
+    title.textContent = 'MATRIX';
+    sub.innerHTML = STAGE_LINES.join('<br>');
+    progress.textContent = 'GOAL: 100 KILLS';
+    enter.textContent = 'ENTER';
+  } else {
+    label.textContent = 'STAGE 2';
+    title.textContent = 'MUTATION';
+    sub.innerHTML = 'THE MATRIX IS GONE.<br>NOW EVERYTHING FIGHTS BACK.<br>GLOBAL MUTATION ONLINE.';
+    progress.textContent = 'STAGE 2 UNLOCKED';
+    enter.textContent = 'ENTER';
+  }
+}
+function openStageScreen(stage){
+  configureStageScreen(stage);
+  inStages = true;
+  const stagesEl = document.getElementById('stagesScreen');
+  stagesEl.classList.remove('hidden');
+  void stagesEl.offsetWidth;
+  stagesEl.classList.add('show');
+  tryPlayMusic(musicGame, () => gameStarted);
+}
+function completeStage1(){
+  if(stageEnding || currentStage !== 1) return;
+  stageEnding = true;
+  player.alive = false;
+  player.vx = 0; player.vy = 0; player.dashing = false;
+  stage2Unlocked = true;
+  saveProgress();
+  // Big final chain: explosions across every living enemy, then unlock Stage 2.
+  for(const e of enemies){
+    spawnExplosion(e.x, e.y, 1.1 + Math.random()*0.8);
+    e.hp = 0;
+    spawnCorpsePieces(e, true);
+  }
+  for(let k=0;k<34;k++){
+    const a=Math.random()*Math.PI*2, r=80+Math.random()*900;
+    const x=clamp(player.x+Math.cos(a)*r,30,WORLD.w-30);
+    const y=clamp(player.y+Math.sin(a)*r,30,WORLD.h-30);
+    spawnExplosion(x,y,0.7+Math.random()*1.0);
+  }
+  bullets=[]; orbs=[]; enemies=[];
+  screenShake={timer:1.4,duration:1.4,strength:28};
+  playSFX(SFX.explosion,0.9);
+  stageEndingTimer=2.0;
+}
+function updateStageEnding(dt){
+  if(!stageEnding) return false;
+  stageEndingTimer -= dt;
+  if(stageEndingTimer <= 0){
+    stageEnding=false;
+    player.alive=true;
+    playingReal=false;
+    autoPilot=true;
+    document.getElementById('ui').style.display='none';
+    openStageScreen(2);
+  }
+  return true;
+}
+function applyGlobMutation(){
+  globMutationActive = true;
+  globMutationTimer = 2.5;
+  globMutationShots = 0;
+  banner.text = 'GLOB MUTATION!';
+  banner.timer = 1.2;
+  screenShake.timer = .35;
+  screenShake.duration = .35;
+  screenShake.strength = 9;
+  // All glob enemies mutate and recoil away from the player.
+  for(const e of enemies){
+    if(e.type !== 'glob') continue;
+    e.isMutatedGlob = true;
+    e.radius *= 1.28;
+    e.speed *= 1.45;
+    e.fireTimer = Math.min(e.fireTimer, .15);
+    const a=Math.atan2(e.y-player.y,e.x-player.x);
+    e.x=clamp(e.x+Math.cos(a)*45,e.radius,WORLD.w-e.radius);
+    e.y=clamp(e.y+Math.sin(a)*45,e.radius,WORLD.h-e.radius);
+  }
+}
+function updateGlobMutation(dt){
+  if(globMutationTimer>0){
+    globMutationTimer-=dt;
+    if(globMutationTimer<=0){
+      globMutationActive=false;
+      for(const e of enemies){
+        if(e.isMutatedGlob){
+          e.radius/=1.28;
+          e.speed/=1.45;
+          e.isMutatedGlob=false;
+        }
+      }
+    }
+  }
+}
+
 window.addEventListener('keydown', e => {
   if(e.key === 'F12' || ((e.ctrlKey||e.metaKey) && ['u','s','p','i'].includes(e.key.toLowerCase())) || (e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase()))){ e.preventDefault(); return; }
   if(e.key === 'Escape'){ togglePause(); return; }
-  if(e.key === '1') weapon='gun';
-  if(e.key === '2') weapon='shotgun';
+  if(e.key === '1'){ weapon='gun'; recordWeaponCombo('gun'); }
+  if(e.key === '2'){ weapon='shotgun'; recordWeaponCombo('shotgun'); }
   keys[e.key.toLowerCase()] = true;
   if(e.key.toLowerCase() === 'q') tryDash();
   if(e.key.toLowerCase() === 'f' && !e.repeat) tryParry();
@@ -508,6 +714,7 @@ document.getElementById('stayBtn').addEventListener('click', () => {
 });
 
 function backToMainMenu(){
+  saveProgress();
   musicGame.pause();
   musicGame.currentTime = 0;
   gameStarted = false;
@@ -659,6 +866,7 @@ const player = {
 function tryDash(){
   if(!player.alive) return;
   if(player.dashCooldown > 0 || player.dashing) return;
+  if(player.lastDir.x === 0 && player.lastDir.y === 0) player.lastDir={x:1,y:0};
   player.dashing = true;
   player.dashTimer = player.dashDuration;
   player.dashCooldown = player.dashCooldownMax;
@@ -695,7 +903,10 @@ function updateAutoPilot(dt){
   // smoothly turn towards the target instead of snapping the aim straight
   // to it every frame - reads a lot less robotic
   if(target){
-    const desiredAngle = Math.atan2(target.y - player.y, target.x - player.x);
+    const leadT = Math.min(0.55, bestD / 1000);
+      const tx = target.x + (target.vx || 0) * leadT;
+      const ty = target.y + (target.vy || 0) * leadT;
+      const desiredAngle = Math.atan2(ty - player.y, tx - player.x);
     const diff = Math.atan2(Math.sin(desiredAngle - botAimAngle), Math.cos(desiredAngle - botAimAngle));
     botAimAngle += diff * Math.min(1, dt * 11);
   } else {
@@ -710,7 +921,7 @@ function updateAutoPilot(dt){
   // catches them one at a time as they arrive, no matter how fast
   for(const o of orbs){
     if(o.parried) continue;
-    if(dist(o.x, o.y, player.x, player.y) <= 150){
+    if(dist(o.x, o.y, player.x, player.y) <= 220){
       tryParry();
       break;
     }
@@ -746,7 +957,7 @@ function updateAutoPilot(dt){
   botFireTimer -= dt;
   if(target && botFireTimer <= 0){
     shoot();
-    botFireTimer = 0.28 + Math.random()*0.35;
+    botFireTimer = 0.16 + Math.random()*0.20;
   }
 
   // dashing away every so often when things get hairy
@@ -798,7 +1009,7 @@ function shoot(){
   } else {
     player.fireCooldown = player.fireRate;
     if(!autoPilot) playSFX(SFX.shoot, 0.55);
-    bullets.push({x:player.x+Math.cos(ang)*muzzleDist,y:player.y+Math.sin(ang)*muzzleDist,vx:Math.cos(ang)*780 + player.vx,vy:Math.sin(ang)*780 + player.vy,dmg:22*DIFF.playerDmgMult,type:'gun'});
+    bullets.push({x:player.x+Math.cos(ang)*muzzleDist,y:player.y+Math.sin(ang)*muzzleDist,vx:Math.cos(ang)*780 + (player.dashing ? 0 : player.vx*0.22),vy:Math.sin(ang)*780 + (player.dashing ? 0 : player.vy*0.22),dmg:22*DIFF.playerDmgMult,type:'gun'});
   }
 }
 
@@ -821,7 +1032,7 @@ function spawnEnemy(){
   else { x = camera.x + Math.random()*canvas.width; y = camera.y + canvas.height + margin; }
   x = clamp(x, 20, WORLD.w-20); y = clamp(y, 20, WORLD.h-20);
 
-  const type = Math.random() < 0.55 ? 'green' : 'glob';
+  const type = currentStage === 2 ? (Math.random() < 0.45 ? 'green' : 'glob') : (Math.random() < 0.55 ? 'green' : 'glob');
   if(type === 'green'){
     const hp = 60 * DIFF.enemyHpMult;
     enemies.push({
@@ -944,6 +1155,9 @@ function registerKill(e, exploded){
   player.killStreak++;
   player.totalKills++;
   showBanner();
+  if(currentStage === 1 && player.totalKills >= 100){
+    completeStage1();
+  }
   return true;
 }
 
@@ -952,6 +1166,10 @@ let lastTime = performance.now();
 let banner = { text:'', timer:0 };
 
 function update(dt){
+  // Stage completion keeps the world alive for the final explosion sequence.
+  if(updateStageEnding(dt)){
+    updateGlobMutation(dt);
+  }
   // Ölüm efektleri oyun dururken de çalışır.
   for(let i=explosions.length-1;i>=0;i--){
     explosions[i].timer -= dt;
@@ -964,6 +1182,7 @@ function update(dt){
     if(bossPulse.timer <= 0) bossPulse.active = false;
   }
   if(healPulseTimer > 0) healPulseTimer -= dt;
+  updateGlobMutation(dt);
 
   for(let i=deathPieces.length-1;i>=0;i--){
     const p = deathPieces[i];
@@ -1046,10 +1265,21 @@ function update(dt){
     player.vy = player.lastDir.y * player.dashSpeed;
     if(player.dashTimer <= 0) player.dashing = false;
   } else {
-    player.x += mv.x * player.speed * dt;
-    player.y += mv.y * player.speed * dt;
-    player.vx = mv.x * player.speed;
-    player.vy = mv.y * player.speed;
+    const accel = 1500;
+    const friction = 1050;
+    const targetVx = mv.x * player.speed;
+    const targetVy = mv.y * player.speed;
+    if(mv.x !== 0 || mv.y !== 0){
+      const blend = Math.min(1, accel*dt/Math.max(player.speed,1));
+      player.vx += (targetVx-player.vx)*blend;
+      player.vy += (targetVy-player.vy)*blend;
+    } else {
+      const f = Math.max(0, 1-friction*dt/Math.max(player.speed,1));
+      player.vx *= f;
+      player.vy *= f;
+    }
+    player.x += player.vx * dt;
+    player.y += player.vy * dt;
   }
   player.x = clamp(player.x, player.radius, WORLD.w - player.radius);
   player.y = clamp(player.y, player.radius, WORLD.h - player.radius);
@@ -1636,6 +1866,14 @@ function render(){
 
   ctx.restore(); // end screen-shake transform
 
+  if(secretFlash>0){
+    secretFlash-=1/60;
+    ctx.save();
+    ctx.globalAlpha=Math.min(.28,secretFlash*.16);
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+  }
   updateUI();
 }
 
@@ -1713,6 +1951,10 @@ function drawEnemy(e){
   }
 
   ctx.save();
+  if(e.isMutatedGlob){
+    ctx.shadowColor='#ff3366';
+    ctx.shadowBlur=32;
+  }
   if(flash>0){
     ctx.shadowColor = '#ff2222';
     ctx.shadowBlur = 18*flash;
@@ -1740,7 +1982,7 @@ function updateUI(){
   document.getElementById('hpText').textContent = Math.max(0,Math.round(player.hp))+' / '+player.maxHp;
   const dashPct = player.dashCooldown<=0 ? 100 : 100*(1 - player.dashCooldown/player.dashCooldownMax);
   document.getElementById('dashBar').style.width = dashPct+'%';
-  document.getElementById('streakText').textContent = `Streak: ${player.killStreak}  •  Kills: ${player.totalKills}`;
+  document.getElementById('streakText').textContent = `Stage ${currentStage}  •  Streak: ${player.killStreak}  •  Kills: ${player.totalKills}${currentStage===1?' / 100':''}`;
 
   const bossWrapEl = document.getElementById('bossBarWrap');
   if(bossActive && bossEnemyRef){
@@ -1775,6 +2017,7 @@ function restartGame(){
   player.alive = true;
   player.vx = 0; player.vy = 0;
   player.killStreak = 0; player.totalKills = 0;
+  player.lastDir = {x:1,y:0};
   player.dashCooldown = 0; player.dashing = false; player.invuln = 0;
   enemies = []; bullets = []; orbs = []; explosions = []; deathPieces = []; corpsePieces = [];
   lastParriedOrbPos = null; parryPulse.active = false;
@@ -1784,6 +2027,8 @@ function restartGame(){
   screenShake = { timer:0, duration:1, strength:0 };
   bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
   healPulseTimer = 0;
+  stageEnding = false; stageEndingTimer = 0;
+  playerShotCount = 0; globMutationShots = 0; globMutationTimer = 0; globMutationActive = false;
   botAimAngle = 0; botFireTimer = 0.4; botDashTimer = 1.6; botWeaponTimer = 5; botStrafeDir = 1; botStrafeTimer = 2;
   botMoveX = 0; botMoveY = 0;
   document.getElementById('deathScreen').style.display = 'none';
@@ -1854,17 +2099,10 @@ document.getElementById('playBtn').addEventListener('click', () => {
   setTimeout(() => {
     menuEl.classList.add('hidden');
 
-    // bot keeps driving the player in the background; STAGE 1 intro shows
-    inStages = true;
-    const stagesEl = document.getElementById('stagesScreen');
-    stagesEl.classList.remove('hidden');
-    // force reflow so the opacity transition actually plays
-    void stagesEl.offsetWidth;
-    stagesEl.classList.add('show');
-
-    document.getElementById('stageSubtitle').innerHTML = STAGE_LINES.join('<br>');
-
-    tryPlayMusic(musicGame, () => gameStarted);
+    // Every PLAY starts at Stage 1, so Stage 1 can always be replayed.
+    restartGame();
+    autoPilot = true;
+    openStageScreen(1);
   }, 620);
 });
 
