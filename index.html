@@ -525,7 +525,7 @@ function setMenuBotWeapon(){
   } else if(hasGun){
     weapon = 'gun';
   } else {
-    weapon = null;
+    weapon = 'gun'; // Menu'de silah yoksa default gun ver
   }
 }
 setMenuBotWeapon();
@@ -2726,7 +2726,7 @@ function restartGame(){
   lastParriedOrbPos = null; parryPulse.active = false;
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
-  weapon = null; // Her stage başlangıcında silah sıfırlanır
+  weapon = 'gun'; // Restart için default silah
   weaponPickups = [];
   stageWeaponCollected = false;
   stage2WeaponCollected = false;
