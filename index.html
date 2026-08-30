@@ -310,10 +310,11 @@ const SFX = {
 // Plays a sound effect, allowing overlapping instances (cloning the node)
 // so rapid-fire shots/explosions don't cut each other off. Fails silently
 // if the file is missing or the browser blocks autoplay.
-function playSFX(audio, volume=0.65){
+function playSFX(audio, volume=0.65, rate=1){
   try{
     const inst = audio.cloneNode();
     inst.volume = volume;
+    inst.playbackRate = rate;
     const p = inst.play();
     if(p && p.catch) p.catch(()=>{});
   }catch(e){}
@@ -662,7 +663,14 @@ function tryDash(){
   player.dashTimer = player.dashDuration;
   player.dashCooldown = player.dashCooldownMax;
   player.invuln = Math.max(player.invuln, player.dashDuration + 0.08);
-  if(!autoPilot) playSFX(SFX.dash, 0.6);
+  if(!autoPilot){
+    // Streak arttıkça dash sesinin pitch'i (playbackRate) yükselir; streak
+    // kırılınca (killStreak sıfırlanınca, damagePlayer içinde) otomatik
+    // olarak normal pitch'e döner - çünkü her dash'te pitch anlık
+    // killStreak değerinden hesaplanıyor, hiçbir şey kalıcı saklanmıyor.
+    const dashPitch = Math.min(2.0, 1 + player.killStreak * 0.08);
+    playSFX(SFX.dash, 0.6, dashPitch);
+  }
 }
 
 function playerPortrait(){
@@ -1392,7 +1400,7 @@ function damagePlayer(amount){
     return;
   }
   player.hp -= amount;
-  player.killStreak = 0; // getting hit resets the streak -> body reverts to nice.png
+  player.killStreak = 0; // getting hit resets the streak -> body reverts to nice.png (and dash pitch resets to normal)
   player.invuln = 0.5;
   if(player.hp <= 0){
     player.hp = 0;
