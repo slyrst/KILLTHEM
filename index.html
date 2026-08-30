@@ -1503,8 +1503,7 @@ document.getElementById('playBtn').addEventListener('click', () => {
   const menuEl = document.getElementById('mainMenu');
   menuEl.classList.add('fade-out');
 
-  musicElevator.pause();
-  musicElevator.currentTime = 0;
+  musicElevator.volume = 0.12; // keep playing under the game music, just quiet
   tryPlayMusic(musicGame);
 
   setTimeout(() => {
