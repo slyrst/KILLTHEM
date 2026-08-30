@@ -99,6 +99,16 @@
     display:flex; flex-direction:column; align-items:flex-start; gap:18px;
   }
   #playBtn{ font-size:23px; padding:15px 42px; letter-spacing:6px; }
+  #settingsBtn{font-size:17px;padding:11px 32px;letter-spacing:4px;}
+  #settingsScreen{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.82);pointer-events:auto;}
+  #settingsScreen.show{display:flex;}
+  #settingsPanel{min-width:340px;padding:28px;border:2px solid #fff;background:rgba(10,10,10,.94);box-shadow:0 0 30px rgba(255,255,255,.18);}
+  .settingRow{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:18px 0;font-weight:bold;letter-spacing:2px;}
+  .settingRow input{width:180px;}
+  #stageSelect{position:fixed;inset:0;z-index:65;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,.82);pointer-events:auto;gap:18px;}
+  #stageSelect.show{display:flex;}
+  .stageCard{min-width:300px;padding:18px;border:2px solid #39ff6e;background:rgba(0,20,8,.7);color:#fff;text-align:center;cursor:pointer;font-weight:bold;letter-spacing:3px;}
+  .stageCard:hover{box-shadow:0 0 25px #39ff6e;}
 
   #diffCorner{
     display:flex; flex-direction:column; align-items:flex-start; gap:10px;
@@ -226,6 +236,7 @@
 <div id="mainMenu">
   <div id="menuStack">
     <button id="playBtn" class="bigBtn">PLAY</button>
+    <button id="settingsBtn" class="bigBtn">SETTINGS</button>
     <div id="diffCorner">
       <button id="diffToggleBtn">DIFFICULTY: NORMAL</button>
       <div id="diffOptions">
@@ -236,6 +247,14 @@
     </div>
   </div>
 </div>
+<div id="settingsScreen"><div id="settingsPanel">
+  <h2>SETTINGS</h2>
+  <div class="settingRow"><span>PARRY VOLUME</span><input id="parryVolume" type="range" min="0" max="100"></div>
+  <div class="settingRow"><span>MUSIC VOLUME</span><input id="musicVolume" type="range" min="0" max="100"></div>
+  <div class="settingRow"><span>SFX VOLUME</span><input id="sfxVolume" type="range" min="0" max="100"></div>
+  <button id="closeSettingsBtn" class="bigBtn">BACK</button>
+</div></div>
+<div id="stageSelect"><h1>STAGES</h1><div id="stage1Card" class="stageCard">STAGE 1<br><small>MATRIX — REPLAYABLE</small></div><div id="stage2Card" class="stageCard">STAGE 2<br><small>UNLOCKED AFTER STAGE 1</small></div><button id="stageBackBtn" class="bigBtn">BACK</button></div>
 <div id="stagesScreen">
   <div class="stageLabel">STAGE 1</div>
   <div class="stageTitle">MATRIX</div>
@@ -310,10 +329,13 @@ const SFX = {
 // Plays a sound effect, allowing overlapping instances (cloning the node)
 // so rapid-fire shots/explosions don't cut each other off. Fails silently
 // if the file is missing or the browser blocks autoplay.
+let masterSfxVolume = Number(localStorage.getItem('kt_sfx_volume') ?? 0.65);
+let parryVolume = Number(localStorage.getItem('kt_parry_volume') ?? 0.70);
+let musicVolume = Number(localStorage.getItem('kt_music_volume') ?? 0.55);
 function playSFX(audio, volume=0.65){
   try{
     const inst = audio.cloneNode();
-    inst.volume = volume;
+    inst.volume = Math.max(0,Math.min(1,volume * masterSfxVolume));
     const p = inst.play();
     if(p && p.catch) p.catch(()=>{});
   }catch(e){}
@@ -420,11 +442,14 @@ const DIFFICULTIES = {
   normal: { bossHpMult:1,   enemyHpMult:1,   playerDmgMult:1,   parryRangeMult:1,   parryAngleMult:1   },
   brutal: { bossHpMult:2,   enemyHpMult:2,   playerDmgMult:0.5, parryRangeMult:0.5, parryAngleMult:0.6 },
 };
-let DIFF = DIFFICULTIES.normal;
+let selectedDifficulty = localStorage.getItem('kt_difficulty') || 'normal';
+let DIFF = DIFFICULTIES[selectedDifficulty] || DIFFICULTIES.normal;
 
 const diffToggleBtn = document.getElementById('diffToggleBtn');
 const diffOptions = document.getElementById('diffOptions');
 
+diffToggleBtn.textContent = 'DIFFICULTY: ' + selectedDifficulty.toUpperCase();
+document.querySelectorAll('.diffBtn').forEach(b=>b.classList.toggle('active', b.dataset.diff===selectedDifficulty));
 diffToggleBtn.addEventListener('click', () => {
   diffOptions.classList.toggle('show');
 });
@@ -433,11 +458,16 @@ document.querySelectorAll('.diffBtn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.diffBtn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    DIFF = DIFFICULTIES[btn.dataset.diff] || DIFFICULTIES.normal;
+    selectedDifficulty = btn.dataset.diff; localStorage.setItem('kt_difficulty', selectedDifficulty); DIFF = DIFFICULTIES[selectedDifficulty] || DIFFICULTIES.normal;
     diffToggleBtn.textContent = 'DIFFICULTY: ' + btn.dataset.diff.toUpperCase();
     diffOptions.classList.remove('show');
   });
 });
+
+let currentStage = 1;
+let stage1Finished = false;
+let stageTransitionTimer = 0;
+let stageMutationTriggered = false;
 
 const STAGE_LINES = [
   "Wake up, Cube.",
@@ -448,7 +478,7 @@ const STAGE_LINES = [
 ];
 
 // ---------- BOSS (MUTATED GREEN) ----------
-let nextBossThreshold = 50;  // kill count needed for the NEXT mutation - increments by 50 each time, so the boss keeps coming back (arasıra çıksın)
+let nextBossThreshold = 100;  // kill count needed for the NEXT mutation - increments by 50 each time, so the boss keeps coming back (arasıra çıksın)
 let bossEnemyRef = null;     // reference to the enemy object that is/was the boss
 let bossActive = false;      // true while the boss health bar should be shown
 let screenShake = { timer: 0, duration: 1, strength: 0 };
@@ -631,7 +661,7 @@ function tryParry(){
   // (like the boss's 5-orb burst) can each still be parried in turn.
   if(parried || shotgunParried){
     parryCooldown = 0.08;
-    if(!autoPilot) playSFX(SFX.parry, 0.7);
+    if(!autoPilot) playSFX(SFX.parry, parryVolume);
   }
 }
 
@@ -686,11 +716,10 @@ function updateAutoPilot(dt){
   // smoothly turn towards the target instead of snapping the aim straight
   // to it every frame - reads a lot less robotic
   if(target){
-    const desiredAngle = Math.atan2(target.y - player.y, target.x - player.x);
-    const diff = Math.atan2(Math.sin(desiredAngle - botAimAngle), Math.cos(desiredAngle - botAimAngle));
-    botAimAngle += diff * Math.min(1, dt * 11);
+    // Menu bot is intentionally exact: its aim is the real target angle, not a delayed interpolation.
+    botAimAngle = Math.atan2(target.y - player.y, target.x - player.x);
   } else {
-    botAimAngle += dt * 0.5; // idle look-around when nothing's alive yet
+    botAimAngle += dt * 0.5;
   }
 
   // fake the mouse so mouseWorld()/shoot()/drawPlayer() all just work
@@ -737,7 +766,7 @@ function updateAutoPilot(dt){
   botFireTimer -= dt;
   if(target && botFireTimer <= 0){
     shoot();
-    botFireTimer = 0.28 + Math.random()*0.35;
+    botFireTimer = weapon==='shotgun' ? 0.86 : 0.35;
   }
 
   // dashing away every so often when things get hairy
@@ -850,7 +879,7 @@ function mutateToBoss(e){
 
   // Kaçıncı boss çıkışı olduğunu say (50=1., 100=2., 150=3. ...) ve her
   // sonraki çıkışı bir öncekinin 2 katı zararlı yap (1x, 2x, 4x, 8x...).
-  const bossNumber = Math.round(nextBossThreshold / 50);
+  const bossNumber = Math.max(1, Math.round(nextBossThreshold / 100));
   const dangerMultiplier = Math.pow(2, bossNumber - 1);
   e.dangerMultiplier = dangerMultiplier;
 
@@ -911,7 +940,7 @@ function registerKill(e, exploded){
   // tetiklemede +50 artar, böylece boss arasıra tekrar tekrar çıkar.
   if(!bossActive && willBeKillNum >= nextBossThreshold && e.type === 'green'){
     mutateToBoss(e);
-    nextBossThreshold += 50;
+    nextBossThreshold += 100;
     // Bu kill iptal - enemy ölmüyor, mutasyona giriyor.
     return false;
   }
@@ -1155,6 +1184,25 @@ function update(dt){
     else updateGlob(e, dt);
   }
 
+  // ----- stage progression -----
+  if(!autoPilot && currentStage===1 && !stageMutationTriggered && player.totalKills >= 100){
+    triggerStage1Mutation();
+  }
+  if(!autoPilot && currentStage===1 && stageMutationTriggered && !stage1Finished && player.totalKills >= 110){
+    finishStage1();
+  }
+  if(stageTransitionTimer>0){
+    stageTransitionTimer-=dt;
+    if(stageTransitionTimer<=0 && stage1Finished){
+      currentStage=2;
+      stageMutationTriggered=false;
+      stage1Finished=false;
+      player.totalKills=0; player.killStreak=0;
+      enemies=[]; bullets=[]; orbs=[];
+      banner.text='STAGE 2'; banner.timer=2;
+    }
+  }
+
   // ----- spawn -----
   // Ana menüde arka planda gösteri yapıldığı için en baştan çok kalabalık
   // ve çok hızlı spawn olur. Gerçek oyunda ise kill sayısı arttıkça
@@ -1261,6 +1309,34 @@ function updateGreen(e, dt){
   }
 }
 
+function mutateGlobStage1(e){
+  if(e.isStageMutation) return;
+  e.isStageMutation = true;
+  e.bossName = 'MUTATED GLOB';
+  e.maxHp *= 2.2; e.hp = Math.max(e.hp, e.maxHp);
+  e.radius *= 1.45; e.speed *= 1.18;
+  e.fireTimer = 0.25;
+  e.mutationBurstTimer = 0.9 + Math.random()*0.8;
+}
+function triggerStage1Mutation(){
+  if(stageMutationTriggered) return;
+  stageMutationTriggered = true;
+  banner.text='GLOBAL MUTATION'; banner.timer=2.4;
+  for(const e of enemies){
+    if(e.type==='glob') mutateGlobStage1(e);
+    else if(e.type==='green'){ e.speed*=1.12; e.dmg=Math.round(e.dmg*1.25); e.hitFlash=0.8; }
+  }
+  screenShake={timer:1.0,duration:1.0,strength:13};
+  for(let n=0;n<24;n++) spawnExplosion(player.x+(Math.random()-.5)*canvas.width*0.8, player.y+(Math.random()-.5)*canvas.height*0.8, .8+Math.random()*1.3);
+}
+function finishStage1(){
+  if(stage1Finished) return;
+  stage1Finished=true; stageTransitionTimer=2.8;
+  banner.text='STAGE 1 COMPLETE'; banner.timer=2.8;
+  for(let n=0;n<45;n++) spawnExplosion(player.x+(Math.random()-.5)*canvas.width, player.y+(Math.random()-.5)*canvas.height, 1+Math.random()*1.8);
+  screenShake={timer:1.4,duration:1.4,strength:22};
+  localStorage.setItem('kt_stage1_complete','1');
+}
 function updateGlob(e, dt){
   const d = dist(e.x,e.y,player.x,player.y);
   const ang = Math.atan2(player.y-e.y, player.x-e.x);
@@ -1280,14 +1356,21 @@ function updateGlob(e, dt){
 
   e.fireTimer -= dt;
   if(e.fireTimer <= 0){
-    // Larger cooldown so the much faster orbs are still fair.
-    e.fireTimer = 2.2 + Math.random()*0.9;
     const a2 = Math.atan2(player.y-e.y, player.x-e.x);
-    orbs.push({
-      x:e.x, y:e.y,
-      vx: Math.cos(a2)*980, vy: Math.sin(a2)*980,
-      dmg: 14,
-    });
+    if(e.isStageMutation){
+      // Mutated Glob: a 10-orb burst with recoil.
+      const count=10;
+      for(let i=0;i<count;i++){
+        const a=a2 + ((i/(count-1))-0.5)*1.25;
+        orbs.push({x:e.x,y:e.y,vx:Math.cos(a)*1040,vy:Math.sin(a)*1040,dmg:18});
+      }
+      e.x -= Math.cos(a2)*34; e.y -= Math.sin(a2)*34;
+      spawnExplosion(e.x,e.y,0.72);
+      e.fireTimer = 2.0 + Math.random()*0.7;
+    } else {
+      e.fireTimer = 2.2 + Math.random()*0.9;
+      orbs.push({x:e.x,y:e.y,vx: Math.cos(a2)*980,vy: Math.sin(a2)*980,dmg:14});
+    }
   }
 }
 
@@ -1727,7 +1810,7 @@ function updateUI(){
   document.getElementById('hpText').textContent = Math.max(0,Math.round(player.hp))+' / '+player.maxHp;
   const dashPct = player.dashCooldown<=0 ? 100 : 100*(1 - player.dashCooldown/player.dashCooldownMax);
   document.getElementById('dashBar').style.width = dashPct+'%';
-  document.getElementById('streakText').textContent = `Streak: ${player.killStreak}  •  Kills: ${player.totalKills}`;
+  document.getElementById('streakText').textContent = `Stage: ${currentStage}  •  Streak: ${player.killStreak}  •  Kills: ${player.totalKills}`;
 
   const bossWrapEl = document.getElementById('bossBarWrap');
   if(bossActive && bossEnemyRef){
@@ -1766,7 +1849,7 @@ function restartGame(){
   lastParriedOrbPos = null; parryPulse.active = false;
   parryCooldown = 0; parryPulseTimer = 0;
   spawnTimer = 1.0; waveDifficulty = 1;
-  nextBossThreshold = 50; bossEnemyRef = null; bossActive = false;
+  nextBossThreshold = 100; bossEnemyRef = null; stageTransitionTimer=0; stageMutationTriggered=false; stage1Finished=false; bossActive = false;
   screenShake = { timer:0, duration:1, strength:0 };
   bossPulse = { active:false, timer:0, duration:1, x:0, y:0 };
   healPulseTimer = 0;
@@ -1776,17 +1859,45 @@ function restartGame(){
   lastTime = performance.now();
 }
 
+// ---------- SETTINGS ----------
+const settingsScreen=document.getElementById('settingsScreen');
+const parryVolumeInput=document.getElementById('parryVolume');
+const musicVolumeInput=document.getElementById('musicVolume');
+const sfxVolumeInput=document.getElementById('sfxVolume');
+parryVolumeInput.value=Math.round(parryVolume*100);
+musicVolumeInput.value=Math.round(musicVolume*100);
+sfxVolumeInput.value=Math.round(masterSfxVolume*100);
+document.getElementById('settingsBtn').onclick=()=>settingsScreen.classList.add('show');
+document.getElementById('closeSettingsBtn').onclick=()=>settingsScreen.classList.remove('show');
+parryVolumeInput.oninput=()=>{parryVolume=parryVolumeInput.value/100;localStorage.setItem('kt_parry_volume',parryVolume);};
+musicVolumeInput.oninput=()=>{musicVolume=musicVolumeInput.value/100;musicElevator.volume=musicVolume;musicGame.volume=musicVolume;localStorage.setItem('kt_music_volume',musicVolume);};
+sfxVolumeInput.oninput=()=>{masterSfxVolume=sfxVolumeInput.value/100;localStorage.setItem('kt_sfx_volume',masterSfxVolume);};
+
+// ---------- STAGE SELECT ----------
+const stageSelect=document.getElementById('stageSelect');
+function openStageSelect(){ document.getElementById('mainMenu').classList.add('hidden'); stageSelect.classList.add('show'); }
+function startSelectedStage(n){
+  currentStage=n; stageSelect.classList.remove('show'); inStages=true;
+  const st=document.getElementById('stagesScreen'); st.classList.remove('hidden'); void st.offsetWidth; st.classList.add('show');
+  st.querySelector('.stageLabel').textContent='STAGE '+n;
+  st.querySelector('.stageTitle').textContent=n===1?'MATRIX':'AFTERMATH';
+  document.getElementById('stageSubtitle').innerHTML=n===1?STAGE_LINES.join('<br>'):'The simulation broke. Now survive what escaped it.';
+}
+document.getElementById('stage1Card').onclick=()=>startSelectedStage(1);
+document.getElementById('stage2Card').onclick=()=>{ if(localStorage.getItem('kt_stage1_complete')) startSelectedStage(2); };
+document.getElementById('stageBackBtn').onclick=()=>{stageSelect.classList.remove('show');document.getElementById('mainMenu').classList.remove('hidden');};
+
 // ---------- MUSIC ----------
 // musics/elevator.mp3 loops in the background while the main menu is up,
 // musics/game.mp3 takes over (looping) as soon as the STAGE 1 intro shows,
 // and keeps playing (pausable via ESC) through the real run.
 const musicElevator = new Audio('musics/elevator.mp3');
 musicElevator.loop = true;
-musicElevator.volume = 0.55;
+musicElevator.volume = musicVolume;
 
 const musicGame = new Audio('musics/game.mp3');
 musicGame.loop = true;
-musicGame.volume = 0.55;
+musicGame.volume = musicVolume;
 
 // Once true, elevator.mp3 must never play again (menu-only track).
 let gameStarted = false;
@@ -1830,28 +1941,9 @@ document.getElementById('playBtn').addEventListener('pointerdown', () => {
 });
 
 document.getElementById('playBtn').addEventListener('click', () => {
-  gameStarted = true;
-  const menuEl = document.getElementById('mainMenu');
-  menuEl.classList.add('fade-out');
-
-  musicElevator.pause();
-  musicElevator.currentTime = 0;
-
-  setTimeout(() => {
-    menuEl.classList.add('hidden');
-
-    // bot keeps driving the player in the background; STAGE 1 intro shows
-    inStages = true;
-    const stagesEl = document.getElementById('stagesScreen');
-    stagesEl.classList.remove('hidden');
-    // force reflow so the opacity transition actually plays
-    void stagesEl.offsetWidth;
-    stagesEl.classList.add('show');
-
-    document.getElementById('stageSubtitle').innerHTML = STAGE_LINES.join('<br>');
-
-    tryPlayMusic(musicGame, () => gameStarted);
-  }, 620);
+  gameStarted=true; musicElevator.pause(); musicElevator.currentTime=0;
+  openStageSelect();
+  tryPlayMusic(musicGame, () => gameStarted);
 });
 
 document.getElementById('enterBtn').addEventListener('click', () => {
