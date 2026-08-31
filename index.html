@@ -3361,7 +3361,27 @@ window.addEventListener('keydown',e=>{
   if(['w','a','s','d'].includes(e.key.toLowerCase())&&editorSelectedObjects.length&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();const k=e.key.toLowerCase();moveEditorSelection(k==='a'?-1:k==='d'?1:0,k==='w'?-1:k==='s'?1:0);return}
   if(e.key==='Delete'&&editorSelectedObjects.length){e.preventDefault();editorSnapshot();const set=new Set(editorSelectedObjects);editorLevel.objects=editorLevel.objects.filter(o=>!set.has(o));editorSelected=null;editorSelectedObjects=[];editorLevel.selectedId=null;updateSelectedFields();updateObjectList();editorRender()}
 } ,true);
-ec.addEventListener('contextmenu',e=>e.preventDefault());ec.addEventListener('mousedown',e=>{const r=ec.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(e.button===1||e.button===2){editorDragging=true;editorLast={x:e.clientX,y:e.clientY};return}if(e.button!==0)return;readEditorFields();const w=editorScreenToWorld(x,y);if(editorTool==='select'){const hit=editorHit(x,y);if(e.shiftKey){if(hit){if(editorSelectedObjects.includes(hit))editorSelectedObjects=editorSelectedObjects.filter(o=>o!==hit);else editorSelectedObjects.push(hit)}}else{editorSelectedObjects=hit?[hit]:[]}editorSelected=editorSelectedObjects[0]||null;editorLevel.selectedId=editorSelected?editorSelected.id:null;updateObjectList();updateSelectedFields();editorRender()}else addEditorObject(editorTool,w.x,w.y)});window.addEventListener('mousemove',e=>{if(!editorDragging||!editorOpen)return;const z=editorZoom();editorPan.x-=(e.clientX-editorLast.x)/z;editorPan.y-=(e.clientY-editorLast.y)/z;editorPan.x=Math.max(0,Math.min(Math.max(0,editorLevel.map.w-ec.width/z),editorPan.x));editorPan.y=Math.max(0,Math.min(Math.max(0,editorLevel.map.h-ec.height/z),editorPan.y));editorLast={x:e.clientX,y:e.clientY};editorRender()});window.addEventListener('mouseup',()=>editorDragging=false);ec.addEventListener('wheel',e=>{e.preventDefault();const z=editorZoom()*(e.deltaY<0?1.1:.909);document.getElementById('edZoom').value=Math.max(.2,Math.min(3,z)).toFixed(2);editorRender()},{passive:false});document.querySelectorAll('.edTool').forEach(b=>b.onclick=()=>{editorTool=b.dataset.tool;document.querySelectorAll('.edTool').forEach(x=>x.classList.remove('active'));b.classList.add('active');editorRender()});['edLevelName','edMusic','edMapW','edMapH','edGrid','edBg','edBgTile'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{editorSnapshot();readEditorFields();editorRender()}));['edX','edY','edObjW','edObjH','edGroup','edRot','edAction','edEntityHp','edEntitySpeed','edEntityDamage','edEntityScale','edMoreEffect'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(!editorSelected&&id!=='edMoreEffect')return;editorSnapshot();readEditorFields();editorRender();updateObjectList()}));document.getElementById('edUndo').onclick=undoEditor;document.getElementById('edRedo').onclick=redoEditor;document.getElementById('edDelete').onclick=()=>{if(!editorSelected)return;editorSnapshot();editorLevel.objects=editorLevel.objects.filter(o=>o!==editorSelected);editorSelected=null;editorLevel.selectedId=null;updateSelectedFields();updateObjectList();editorRender()};document.getElementById('edDuplicate').onclick=()=>{if(!editorSelected)return;editorSnapshot();const o=cloneData(editorSelected);o.id='o'+Date.now()+Math.random().toString(36).slice(2,7);const g=+document.getElementById('edGrid').value||50;o.x+=g;o.y+=g;editorLevel.objects.push(o);editorSelected=o;editorLevel.selectedId=o.id;updateSelectedFields();updateObjectList();editorRender()};document.getElementById('edNew').onclick=()=>{if(confirm('Create a new level? Unsaved changes will be lost.')){editorLevel=blankLevel();editorPan={x:0,y:0};editorSelected=null;editorUndoStack=[];editorRedoStack=[];loadEditorFields();editorRender()}};document.getElementById('edSave').onclick=()=>{readEditorFields();localStorage.setItem('kt_editor_draft',JSON.stringify(editorLevel));showEditorNotice('LEVEL SAVED')};document.getElementById('edPublish').onclick=()=>{readEditorFields();const arr=JSON.parse(localStorage.getItem('kt_published_stage3')||'[]');const idx=arr.findIndex(x=>x.name===editorLevel.name);if(idx>=0)arr[idx]=cloneData(editorLevel);else arr.push(cloneData(editorLevel));localStorage.setItem('kt_published_stage3',JSON.stringify(arr));injectPublishedStageCards();showEditorNotice('LEVEL PUBLISHED')};document.getElementById('edPlay').onclick=()=>{
+ec.addEventListener('contextmenu',e=>e.preventDefault());ec.addEventListener('mousedown',e=>{const r=ec.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(e.button===1||e.button===2){editorDragging=true;editorLast={x:e.clientX,y:e.clientY};return}if(e.button!==0)return;readEditorFields();const w=editorScreenToWorld(x,y);if(editorTool==='select'){const hit=editorHit(x,y);if(e.shiftKey){if(hit){if(editorSelectedObjects.includes(hit))editorSelectedObjects=editorSelectedObjects.filter(o=>o!==hit);else editorSelectedObjects.push(hit)}}else{editorSelectedObjects=hit?[hit]:[]}editorSelected=editorSelectedObjects[0]||null;editorLevel.selectedId=editorSelected?editorSelected.id:null;updateObjectList();updateSelectedFields();editorRender()}else addEditorObject(editorTool,w.x,w.y)});window.addEventListener('mousemove',e=>{if(!editorDragging||!editorOpen)return;const z=editorZoom();editorPan.x-=(e.clientX-editorLast.x)/z;editorPan.y-=(e.clientY-editorLast.y)/z;editorPan.x=Math.max(0,Math.min(Math.max(0,editorLevel.map.w-ec.width/z),editorPan.x));editorPan.y=Math.max(0,Math.min(Math.max(0,editorLevel.map.h-ec.height/z),editorPan.y));editorLast={x:e.clientX,y:e.clientY};editorRender()});window.addEventListener('mouseup',()=>editorDragging=false);ec.addEventListener('wheel',e=>{e.preventDefault();const z=editorZoom()*(e.deltaY<0?1.1:.909);document.getElementById('edZoom').value=Math.max(.2,Math.min(3,z)).toFixed(2);editorRender()},{passive:false});document.querySelectorAll('.edTool').forEach(b=>b.onclick=()=>{editorTool=b.dataset.tool;document.querySelectorAll('.edTool').forEach(x=>x.classList.remove('active'));b.classList.add('active');editorRender()});['edLevelName','edMusic','edMapW','edMapH','edGrid','edBg','edBgTile'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{editorSnapshot();readEditorFields();editorRender()}));['edX','edY','edObjW','edObjH','edGroup','edRot','edAction','edEntityHp','edEntitySpeed','edEntityDamage','edEntityScale','edMoreEffect'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(!editorSelected&&id!=='edMoreEffect')return;editorSnapshot();readEditorFields();editorRender();updateObjectList()}));document.getElementById('edUndo').onclick=undoEditor;document.getElementById('edRedo').onclick=redoEditor;document.getElementById('edDelete').onclick=()=>{if(!editorSelected)return;editorSnapshot();editorLevel.objects=editorLevel.objects.filter(o=>o!==editorSelected);editorSelected=null;editorLevel.selectedId=null;updateSelectedFields();updateObjectList();editorRender()};document.getElementById('edDuplicate').onclick=()=>{if(!editorSelected)return;editorSnapshot();const o=cloneData(editorSelected);o.id='o'+Date.now()+Math.random().toString(36).slice(2,7);const g=+document.getElementById('edGrid').value||50;o.x+=g;o.y+=g;editorLevel.objects.push(o);editorSelected=o;editorLevel.selectedId=o.id;updateSelectedFields();updateObjectList();editorRender()};document.getElementById('edNew').onclick=()=>{if(confirm('Create a new level? Unsaved changes will be lost.')){
+  editorLevel=blankLevel();
+  editorLevel.objects=[];
+  editorLevel.selectedId=null;
+  editorPan={x:0,y:0};
+  editorSelected=null;
+  editorSelectedObjects=[];
+  editorUndoStack=[];
+  editorRedoStack=[];
+  localStorage.removeItem('kt_editor_draft');
+  loadEditorFields();
+  updateObjectList();
+  editorRender();
+  showEditorNotice('NEW LEVEL CLEAN');
+}};document.getElementById('edSave').onclick=()=>{
+  readEditorFields();
+  editorLevel.objects = editorLevel.objects || [];
+  localStorage.setItem('kt_editor_draft',JSON.stringify(editorLevel));
+  console.log('SAVED LEVEL OBJECTS:', editorLevel.objects.length);
+  showEditorNotice('LEVEL SAVED')
+};document.getElementById('edPublish').onclick=()=>{readEditorFields();const arr=JSON.parse(localStorage.getItem('kt_published_stage3')||'[]');const idx=arr.findIndex(x=>x.name===editorLevel.name);if(idx>=0)arr[idx]=cloneData(editorLevel);else arr.push(cloneData(editorLevel));localStorage.setItem('kt_published_stage3',JSON.stringify(arr));injectPublishedStageCards();showEditorNotice('LEVEL PUBLISHED')};document.getElementById('edPlay').onclick=()=>{
  readEditorFields();
  editorTestMode=true;
  localStorage.setItem('kt_test_level',JSON.stringify(editorLevel));
@@ -3486,6 +3506,395 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 
+</script>
+
+<script id="jsonLevelExportSystem">
+(function(){
+
+// JSON level export system
+window.exportKillThemLevel = function(){
+
+    const level = {
+        name: document.getElementById("edLevelName")?.value || "UNTITLED",
+        version: 1,
+        music: document.getElementById("edMusic")?.value || "",
+        map:{
+            background: document.getElementById("edBg")?.value || "images/Map.png",
+            width: Number(document.getElementById("edMapW")?.value || 6000),
+            height: Number(document.getElementById("edMapH")?.value || 3000)
+        },
+        objects:[]
+    };
+
+    // Existing editor object array names
+    if(window.editorObjects && Array.isArray(window.editorObjects)){
+        level.objects = JSON.parse(JSON.stringify(window.editorObjects));
+    }
+    else if(window.levelObjects && Array.isArray(window.levelObjects)){
+        level.objects = JSON.parse(JSON.stringify(window.levelObjects));
+    }
+
+    const blob = new Blob(
+        [JSON.stringify(level,null,2)],
+        {type:"application/json"}
+    );
+
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=(level.name.replace(/[^a-z0-9-_]/gi,"_") || "level")+".json";
+    a.click();
+
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+
+
+// Add export button into editor
+window.addEventListener("load",()=>{
+
+    const top=document.getElementById("editorTop");
+    if(!top || document.getElementById("edExportJSON")) return;
+
+    const btn=document.createElement("button");
+    btn.id="edExportJSON";
+    btn.className="edBtn";
+    btn.textContent="EXPORT JSON";
+    btn.onclick=window.exportKillThemLevel;
+
+    const publish=document.getElementById("edPublish");
+    if(publish)
+        top.insertBefore(btn,publish);
+    else
+        top.appendChild(btn);
+});
+
+
+// JSON import helper
+window.importKillThemLevel=function(json){
+
+    try{
+        const data=typeof json==="string" ? JSON.parse(json) : json;
+
+        if(document.getElementById("edLevelName"))
+            document.getElementById("edLevelName").value=data.name || "UNTITLED";
+
+        if(window.editorObjects)
+            window.editorObjects=data.objects || [];
+
+        if(typeof renderEditor==="function")
+            renderEditor();
+
+        return true;
+
+    }catch(e){
+        console.error("LEVEL IMPORT ERROR",e);
+        return false;
+    }
+};
+
+})();
+</script>
+
+<script id="jsonLevelExportV2">
+(function(){
+
+function findEditorObjects(){
+    const candidates = [
+        "editorObjects",
+        "levelObjects",
+        "objects",
+        "placedObjects",
+        "editorState"
+    ];
+
+    for(const key of candidates){
+        try{
+            const v = window[key];
+            if(Array.isArray(v) && v.length) return v;
+            if(v && Array.isArray(v.objects) && v.objects.length) return v.objects;
+        }catch(e){}
+    }
+
+    // Search global variables as fallback
+    for(const key in window){
+        try{
+            const v = window[key];
+            if(Array.isArray(v) && v.length){
+                if(v[0] && (v[0].type || v[0].x !== undefined))
+                    return v;
+            }
+        }catch(e){}
+    }
+
+    return [];
+}
+
+window.exportKillThemLevelV2=function(){
+
+    const objects=findEditorObjects();
+
+    const level={
+        name:document.getElementById("edLevelName")?.value || "UNTITLED",
+        version:2,
+        music:document.getElementById("edMusic")?.value || "",
+        map:{
+            background:document.getElementById("edBg")?.value || "images/Map.png",
+            width:Number(document.getElementById("edMapW")?.value || 6000),
+            height:Number(document.getElementById("edMapH")?.value || 3000)
+        },
+        objects:objects.map(o=>({
+            ...o,
+            hp:o.hp ?? o.maxHp,
+            damage:o.damage ?? 0,
+            speed:o.speed ?? 0,
+            attackCooldown:o.attackCooldown ?? 0,
+            projectileDamage:o.projectileDamage ?? 0,
+            projectileSpeed:o.projectileSpeed ?? 0,
+            projectileCooldown:o.projectileCooldown ?? 0
+        }))
+    };
+
+    const blob=new Blob(
+        [JSON.stringify(level,null,2)],
+        {type:"application/json"}
+    );
+
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=(level.name.replace(/[^a-z0-9-_]/gi,"_")||"level")+".json";
+    a.click();
+
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+
+    console.log("Exported objects:", level.objects.length);
+};
+
+window.addEventListener("load",()=>{
+    const old=document.getElementById("edExportJSON");
+    if(old) old.onclick=window.exportKillThemLevelV2;
+});
+
+})();
+</script>
+
+<script id="jsonLevelExportV3">
+(function(){
+
+// Capture editor objects whenever editor creates/changes them
+window.__KT_CAPTURED_OBJECTS = [];
+
+function captureObjects(){
+    const possible = [
+        window.editorObjects,
+        window.levelObjects,
+        window.objects,
+        window.placedObjects
+    ];
+
+    for(const arr of possible){
+        if(Array.isArray(arr) && arr.length){
+            window.__KT_CAPTURED_OBJECTS = arr;
+            return;
+        }
+    }
+
+    // Search non-enumerable editor references is impossible from outside,
+    // so hook common editor arrays when they appear later.
+}
+
+setInterval(captureObjects,500);
+
+window.exportKillThemLevelV3=function(){
+
+    let objs = window.__KT_CAPTURED_OBJECTS || [];
+
+    const level={
+        name:document.getElementById("edLevelName")?.value || "UNTITLED",
+        version:3,
+        music:document.getElementById("edMusic")?.value || "",
+        map:{
+            background:document.getElementById("edBg")?.value || "images/Map.png",
+            width:Number(document.getElementById("edMapW")?.value || 6000),
+            height:Number(document.getElementById("edMapH")?.value || 3000)
+        },
+        objects: JSON.parse(JSON.stringify(objs))
+    };
+
+    console.log("KILLTHEM EXPORT OBJECTS:", level.objects);
+
+    const blob=new Blob(
+        [JSON.stringify(level,null,2)],
+        {type:"application/json"}
+    );
+
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="level.json";
+    a.click();
+};
+
+window.addEventListener("load",()=>{
+    const btn=document.getElementById("edExportJSON");
+    if(btn) btn.onclick=window.exportKillThemLevelV3;
+});
+
+})();
+</script>
+
+<script id="KT_EDITOR_CLEAN_FIX">
+(function(){
+
+function clearEditorProject(){
+    // clear only editor data, not settings/weapons
+    const keys=[
+        "kt_editor_level",
+        "kt_level_editor",
+        "kt_levels",
+        "publishedLevels",
+        "customLevels",
+        "editorSave"
+    ];
+    keys.forEach(k=>localStorage.removeItem(k));
+
+    // clear known runtime arrays
+    [
+        "editorObjects",
+        "levelObjects",
+        "placedObjects",
+        "objects"
+    ].forEach(k=>{
+        try{
+            if(Array.isArray(window[k])) window[k]=[];
+        }catch(e){}
+    });
+
+    if(window.currentEditorLevel)
+        window.currentEditorLevel=null;
+
+    const name=document.getElementById("edLevelName");
+    if(name) name.value="UNTITLED";
+
+    const list=document.getElementById("editorObjects");
+    if(list) list.innerHTML="";
+
+    if(typeof renderEditor==="function")
+        renderEditor();
+
+    console.log("KILLTHEM: NEW PROJECT CLEAN");
+}
+
+window.addEventListener("load",()=>{
+    const btn=document.getElementById("edNew");
+    if(btn){
+        btn.addEventListener("click",function(e){
+            e.stopImmediatePropagation();
+            clearEditorProject();
+        },true);
+    }
+});
+
+})();
+</script>
+
+<script id="KT_EDITOR_STATE_RESET_FIX">
+(function(){
+
+function clearEditorState(){
+
+    // Clear common editor storage
+    const keys = [
+        "kt_level",
+        "kt_levels",
+        "kt_editor",
+        "levelEditor",
+        "editorObjects"
+    ];
+
+    keys.forEach(k=>{
+        try{
+            localStorage.removeItem(k);
+        }catch(e){}
+    });
+
+    // Clear known arrays if they exist
+    const arrays = [
+        "editorObjects",
+        "levelObjects",
+        "placedObjects",
+        "objects"
+    ];
+
+    arrays.forEach(name=>{
+        try{
+            if(Array.isArray(window[name])){
+                window[name].length = 0;
+            }
+        }catch(e){}
+    });
+
+    // Clear current editor state objects
+    try{
+        if(window.editorState){
+            if(Array.isArray(window.editorState.objects))
+                window.editorState.objects=[];
+        }
+    }catch(e){}
+
+    if(typeof renderEditor === "function")
+        renderEditor();
+
+    console.log("KILLTHEM: NEW LEVEL CLEANED");
+}
+
+
+// Fix NEW button
+window.addEventListener("load",()=>{
+
+    const newBtn=document.getElementById("edNew");
+
+    if(newBtn){
+        newBtn.addEventListener("click",()=>{
+
+            clearEditorState();
+
+            const name=document.getElementById("edLevelName");
+            if(name) name.value="UNTITLED";
+
+            const bg=document.getElementById("edBg");
+            if(bg) bg.value="images/Map.png";
+
+        }, true);
+    }
+
+});
+
+
+// Fix save: prevent old empty export
+window.addEventListener("beforeunload",()=>{
+    try{
+        localStorage.removeItem("editorObjects");
+    }catch(e){}
+});
+
+})();
+</script>
+
+<script id="KT_REAL_JSON_EXPORT">
+window.addEventListener('load',()=>{
+ const btn=document.createElement('button');
+ btn.className='edBtn';
+ btn.textContent='EXPORT JSON';
+ btn.onclick=()=>{
+   if(typeof readEditorFields==='function') readEditorFields();
+   const data=JSON.parse(JSON.stringify(editorLevel));
+   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+   const a=document.createElement('a');
+   a.href=URL.createObjectURL(blob);
+   a.download=(data.name||'level')+'.json';
+   a.click();
+ };
+ const top=document.getElementById('editorTop');
+ if(top) top.insertBefore(btn,document.getElementById('edExit'));
+});
 </script>
 </body>
 </html>
