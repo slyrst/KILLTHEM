@@ -741,7 +741,9 @@ function backToMainMenu(){
   menuEl.classList.remove('fade-out','hidden');
 
   restartGame();
-  spawnMainMenuEntities();
+  // restartGame() clears enemies; the normal spawn loop now repopulates the menu.
+  spawnTimer = 0.05;
+  waveDifficulty = 1;
 }
 
 function spawnMainMenuEntities(){
@@ -1117,7 +1119,12 @@ function spawnEnemy(){
   x = clamp(x, 20, WORLD.w-20); y = clamp(y, 20, WORLD.h-20);
 
   let type;
-  if(currentStage === 2){
+  if(inMenu && !playingReal){
+    // Main menu uses the exact same spawnEnemy() path as gameplay, but shows
+    // the full monster roster so Green/Glob/Knight are visibly spawning.
+    const r = Math.random();
+    type = r < 0.40 ? 'green' : (r < 0.70 ? 'glob' : 'knight');
+  } else if(currentStage === 2){
     const r = Math.random();
     type = r < 0.4 ? 'green' : (r < 0.7 ? 'glob' : 'knight');
   } else {
@@ -1305,8 +1312,9 @@ function update(dt){
   // Editor and main-menu previews must never run the real combat simulation.
   // This is intentionally before enemy spawning/projectile/combat logic.
   if(editorOpen && !editorTestMode) return;
+  // Main-menu entities use the same enemy simulation/spawn system as stages.
+  // Do NOT clear enemies here: doing so every frame made menu monsters invisible.
   if(inMenu && !playingReal){
-    enemies.length = 0;
     bullets.length = 0;
     swordProjectiles.length = 0;
     cubeBullets.length = 0;
