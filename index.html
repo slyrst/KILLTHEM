@@ -3466,129 +3466,90 @@ requestAnimationFrame(loop);
 
 </script>
 
-<style id="fixPatchCSS">
-/* Editor improvements */
-#imageImportPanel,.extraPropPanel{background:#0d1115;border:1px solid #29323a;padding:10px;margin-top:10px}
-.wallPreviewSlim{border:1px solid #39ff6e}
-
-/* Play test hides menus */
-body.playTesting #mainMenu,
-body.playTesting #settingsScreen,
-body.playTesting #stageSelect,
-body.playTesting #bossStageSelect{
- display:none!important;
-}
-</style>
-
-<script id="fixPatchJS">
-/* KILLTHEM editor expansion patch */
+<script id="directEditorFix">
+/* DIRECT EDITOR FIX */
 
 (function(){
- const oldSetTool = window.setEditorTool;
 
- // Extended object defaults
- window.fixObjectDefaults = function(o){
-   o.collision = o.collision !== false;
-   o.opacity = o.opacity ?? 1;
-   o.scaleX = o.scaleX ?? 1;
-   o.scaleY = o.scaleY ?? 1;
-   if(o.type === "wall"){
-     o.slim = true;
-   }
-   if(["green","v2","knight","glob"].includes(o.type)){
-     o.aggroRange = o.aggroRange ?? 700;
-     o.attackRange = o.attackRange ?? 90;
-     o.boss = o.boss ?? false;
-   }
-   return o;
- };
+// Image object creator
+window.addImageObject = function(path){
+    if(!path) return;
+    const obj = {
+        type:"image",
+        image:path,
+        x:WORLD.w/2,
+        y:WORLD.h/2,
+        width:300,
+        height:300,
+        scaleX:1,
+        scaleY:1,
+        rotation:0,
+        collision:false
+    };
+    if(window.editorObjects) editorObjects.push(obj);
+    if(window.renderEditor) renderEditor();
+};
 
- // Prevent menu control takeover after test
- window.startEditorPlayTestFix = function(){
-   document.body.classList.add("playTesting");
-   window.editorTestMode = true;
-   window.autoPilot = false;
-   window.playingReal = true;
-   window.inMenu = false;
- };
 
- window.stopEditorPlayTestFix = function(){
-   document.body.classList.remove("playTesting");
-   window.editorTestMode = false;
- };
+// slim wall default
+window.createSlimWall = function(){
+    return {
+        type:"wall",
+        width:400,
+        height:14,
+        collision:true,
+        rotation:0
+    };
+};
 
- // Extend enemy property updater if existing editor supports selected object
- window.applyExtraEnemyProperties=function(obj){
-   if(!obj) return;
-   const hp=document.getElementById("edEntityHp");
-   const speed=document.getElementById("edEntitySpeed");
-   const dmg=document.getElementById("edEntityDamage");
-   const scale=document.getElementById("edEntityScale");
-   if(hp) obj.hp=Number(hp.value)||obj.hp;
-   if(speed) obj.speed=Number(speed.value)||obj.speed;
-   if(dmg) obj.damage=Number(dmg.value)||obj.damage;
-   if(scale) obj.scale=Number(scale.value)||obj.scale;
- };
 
- // Add extra UI controls into editor side
- function addEditorControls(){
-   const side=document.getElementById("editorSide");
-   if(!side || document.getElementById("extraEditorControls")) return;
+// playtest hard lock
+window.enterEditorPlayTest=function(){
+    window.editorTestMode=true;
+    window.inMenu=false;
+    window.playingReal=true;
+    window.autoPilot=false;
 
-   const div=document.createElement("div");
-   div.id="extraEditorControls";
-   div.innerHTML=`
-   <div class="extraPropPanel">
-   <h3>ADVANCED PROPERTIES</h3>
+    ["mainMenu","settingsScreen","stageSelect","bossStageSelect"].forEach(id=>{
+        const e=document.getElementById(id);
+        if(e) e.style.display="none";
+    });
+};
 
-   <label>IMAGE</label>
-   <input id="importImageName" placeholder="images/file.png">
+window.exitEditorPlayTest=function(){
+    window.editorTestMode=false;
+    window.playingReal=false;
+    window.inMenu=true;
+    window.autoPilot=true;
 
-   <label>IMAGE SCALE X</label>
-   <input id="imageScaleX" type="number" value="1" step="0.1">
+    const m=document.getElementById("mainMenu");
+    if(m)m.style.display="block";
 
-   <label>IMAGE SCALE Y</label>
-   <input id="imageScaleY" type="number" value="1" step="0.1">
+    if(typeof restartGame==="function") restartGame();
 
-   <label>OPACITY</label>
-   <input id="imageOpacity" type="number" value="1" step="0.1">
+    window.spawnTimer=0.05;
+};
 
-   <label>
-   <input id="objectCollision" type="checkbox" checked>
-   COLLISION
-   </label>
 
-   <h3>ENEMY EXTRA</h3>
+// scale handles
+window.drawScaleHandles=function(ctx,obj){
+    const s=8;
+    const pts=[
+        [obj.x,obj.y],
+        [obj.x+obj.width/2,obj.y],
+        [obj.x+obj.width/2,obj.y+obj.height/2],
+        [obj.x,obj.y+obj.height/2]
+    ];
 
-   <label>AGGRO RANGE</label>
-   <input id="enemyAggro" type="number" value="700">
-
-   <label>ATTACK RANGE</label>
-   <input id="enemyAttack" type="number" value="90">
-
-   <label>
-   <input id="enemyBoss" type="checkbox">
-   BOSS
-   </label>
-   </div>`;
-   side.appendChild(div);
- }
-
- window.addEventListener("load",addEditorControls);
-
- // Hide buttons during test even if recreated
- const observer=new MutationObserver(()=>{
-   if(window.editorTestMode){
-     document.querySelectorAll(".bigBtn,.edBtn").forEach(b=>{
-       if(!b.closest("#levelEditor") || b.id!=="edExit")
-          b.style.display="none";
-     });
-   }
- });
- observer.observe(document.body,{childList:true,subtree:true});
+    ctx.fillStyle="#39ff6e";
+    pts.forEach(p=>{
+        ctx.beginPath();
+        ctx.arc(p[0],p[1],s,0,Math.PI*2);
+        ctx.fill();
+    });
+};
 
 })();
 </script>
-
 </body>
 </html>
