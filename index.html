@@ -3271,7 +3271,52 @@ const CREATOR_UNLOCK_KEY='kt_creator_unlocked_v1';let creatorUnlocked=localStora
   // Hard isolate editor from the gameplay simulation.
   Object.keys(keys).forEach(k=>delete keys[k]); mouseDown=false; playingReal=false; paused=false; autoPilot=false;
   enemies.length=0; bullets.length=0; swordProjectiles.length=0; cubeBullets.length=0; orbs.length=0;
-  editorOpen=true;editorTestMode=false;editor.classList.add('show');editorResize();editorLevel=cloneData(level||publishedLevels[publishedLevels.length-1]||JSON.parse(localStorage.getItem('kt_editor_draft')||'null')||blankLevel());editorUndoStack=[];editorRedoStack=[];editorPan={x:0,y:0};editorSelected=null;editorSelectedObjects=[];loadEditorFields();editorRender()}function closeEditor(){editorOpen=false;editor.classList.remove('show');editorSelected=null}function isEditorEntityType(type){return type==='green'||type==='glob'||type==='knight'||type==='v2'}
+  editorOpen=true;editorTestMode=false;editor.classList.add('show');editorResize();editorLevel=cloneData(level||publishedLevels[publishedLevels.length-1]||JSON.parse(localStorage.getItem('kt_editor_draft')||'null')||blankLevel());editorUndoStack=[];editorRedoStack=[];editorPan={x:0,y:0};editorSelected=null;editorSelectedObjects=[];loadEditorFields();editorRender()}function closeEditor(){
+  // Leaving the creator/editor always returns to the MAIN MENU demo.
+  // Never leave the game in the editor's autoPilot=false state, otherwise
+  // the menu character would appear controllable after closing the editor.
+  editorOpen=false;
+  editor.classList.remove('show');
+  editorSelected=null;
+  editorSelectedObjects=[];
+
+  // Clear any editor/test input and restore the menu state.
+  Object.keys(keys).forEach(k=>delete keys[k]);
+  mouseDown=false;
+  editorTestMode=false;
+  customLevelRuntime=false;
+  playingReal=false;
+  paused=false;
+  inStages=false;
+  inMenu=true;
+  autoPilot=true;
+
+  // Reset the bot's movement/aim timers so it immediately takes control.
+  botMoveX=0;
+  botMoveY=0;
+  botAimAngle=0;
+  botFireTimer=0.4;
+  botDashTimer=1.6;
+  botWeaponTimer=5;
+  botStrafeDir=1;
+  botStrafeTimer=2;
+
+  // Stop any editor/test music and clear temporary combat entities.
+  try{
+    if(customMusic){
+      customMusic.pause();
+      customMusic.currentTime=0;
+      customMusic=null;
+    }
+  }catch(_){}
+  enemies.length=0;
+  bullets.length=0;
+  swordProjectiles.length=0;
+  cubeBullets.length=0;
+  orbs.length=0;
+
+  document.getElementById('ui').style.display='';
+}function isEditorEntityType(type){return type==='green'||type==='glob'||type==='knight'||type==='v2'}
 function loadEditorFields(){const L=editorLevel;document.getElementById('edLevelName').value=L.name||'UNTITLED';document.getElementById('edMusic').value=L.music||'';document.getElementById('edMapW').value=L.map.w;document.getElementById('edMapH').value=L.map.h;document.getElementById('edGrid').value=L.map.grid||50;document.getElementById('edBg').value=L.map.background||'';document.getElementById('edBgTile').value=L.map.tile||512;if(L.selectedId)editorSelected=L.objects.find(o=>o.id===L.selectedId)||null;updateSelectedFields();updateObjectList()}
 function readEditorFields(){if(!editorLevel)return;editorLevel.name=document.getElementById('edLevelName').value.trim()||'UNTITLED';editorLevel.music=document.getElementById('edMusic').value;editorLevel.map.w=Math.max(1000,+document.getElementById('edMapW').value||6000);editorLevel.map.h=Math.max(700,+document.getElementById('edMapH').value||3000);editorLevel.map.grid=Math.max(10,+document.getElementById('edGrid').value||50);editorLevel.map.background=document.getElementById('edBg').value.trim();editorLevel.map.tile=Math.max(64,+document.getElementById('edBgTile').value||512);if(editorSelected){editorSelected.x=+document.getElementById('edX').value||0;editorSelected.y=+document.getElementById('edY').value||0;editorSelected.w=Math.max(10,+document.getElementById('edObjW').value||100);editorSelected.h=Math.max(10,+document.getElementById('edObjH').value||100);editorSelected.group=Math.max(0,+document.getElementById('edGroup').value||0);editorSelected.rotation=+document.getElementById('edRot').value||0;editorSelected.action=document.getElementById('edAction').value;if(isEditorEntityType(editorSelected.type)){editorSelected.entityHp=Math.max(1,+document.getElementById('edEntityHp').value||60);editorSelected.entitySpeed=Math.max(0,+document.getElementById('edEntitySpeed').value||0);editorSelected.entityDamage=Math.max(0,+document.getElementById('edEntityDamage').value||0);editorSelected.entityScale=Math.max(.1,Math.min(5,+document.getElementById('edEntityScale').value||1));editorSelected.moreEffect=!!document.getElementById('edMoreEffect').checked}else{delete editorSelected.entityHp;delete editorSelected.entitySpeed;delete editorSelected.entityDamage;delete editorSelected.entityScale;delete editorSelected.moreEffect}editorLevel.selectedId=editorSelected.id}}
 function updateSelectedFields(){const o=editorSelected,ids=['edX','edY','edObjW','edObjH','edGroup','edRot'];if(!o){ids.forEach(id=>document.getElementById(id).value='');document.getElementById('edAction').value='spawn';document.getElementById('entityProps').style.display='none';return}document.getElementById('edX').value=Math.round(o.x);document.getElementById('edY').value=Math.round(o.y);document.getElementById('edObjW').value=Math.round(o.w);document.getElementById('edObjH').value=Math.round(o.h);document.getElementById('edGroup').value=o.group||0;document.getElementById('edRot').value=o.rotation||0;document.getElementById('edAction').value=o.action||'spawn';const entity=isEditorEntityType(o.type);document.getElementById('entityProps').style.display=entity?'block':'none';if(entity){const defaults=o.type==='green'?{hp:60,speed:118,damage:18}:o.type==='glob'?{hp:40,speed:70,damage:0}:o.type==='knight'?{hp:90,speed:205,damage:24}:{hp:10000,speed:205,damage:0};document.getElementById('edEntityHp').value=o.entityHp??defaults.hp;document.getElementById('edEntitySpeed').value=o.entitySpeed??defaults.speed;document.getElementById('edEntityDamage').value=o.entityDamage??defaults.damage;document.getElementById('edEntityScale').value=o.entityScale??1;document.getElementById('edMoreEffect').checked=!!o.moreEffect}}
