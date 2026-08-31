@@ -950,93 +950,154 @@ function playerPortrait(){
 // mouse aim (via mouseScreen, which mouseWorld()/shoot()/drawPlayer()
 // already read) and fires/dashes/switches weapons on its own timers.
 function updateAutoPilot(dt){
-  // pick the nearest enemy to fight
+  // MAIN-MENU BOT = LIVE PLAYER DEMO
+  // The bot uses the real player weapon/shooting path. It continuously locks
+  // onto the nearest living enemy, smoothly turns toward it, and only fires
+  // once the aim is actually aligned. This prevents the old "shoot while
+  // still turning" misses and makes the bot look like a skilled player.
+
+  // Find the CLOSEST living enemy every frame.
   let target = null, bestD = Infinity;
   for(const e of enemies){
+    if(e.dead || e.hp <= 0 || e.mutating) continue;
+
     const d = dist(player.x, player.y, e.x, e.y);
-    if(d < bestD){ bestD = d; target = e; }
+    if(d < bestD){
+      bestD = d;
+      target = e;
+    }
   }
 
-  // Mouse-like smooth aiming: smoothly rotate toward the target instead of snapping.
-  // The exponential blend keeps it smooth at every FPS while still eventually becoming accurate.
+  // Smoothly rotate toward the nearest enemy.
+  // Higher response = fast/accurate, but still visibly smooth instead of
+  // snapping instantly like an aimbot.
   if(target){
-    const desiredAngle = Math.atan2(target.y - player.y, target.x - player.x);
-    const angleDiff = Math.atan2(
+    const desiredAngle = Math.atan2(
+      target.y - player.y,
+      target.x - player.x
+    );
+
+    let diff = Math.atan2(
       Math.sin(desiredAngle - botAimAngle),
       Math.cos(desiredAngle - botAimAngle)
     );
-    const aimSmooth = 1 - Math.exp(-4.2 * dt);
-    botAimAngle += angleDiff * aimSmooth;
-  } else {
-    botAimAngle += dt * 0.32;
-  }
 
-  // fake the mouse so mouseWorld()/shoot()/drawPlayer() all just work
-  mouseScreen.x = canvas.width/2 + Math.cos(botAimAngle) * 140;
-  mouseScreen.y = canvas.height/2 + Math.sin(botAimAngle) * 140;
+    const aimSmooth = 1 - Math.exp(-18.0 * dt);
+    botAimAngle += diff * aimSmooth;
 
-  // The main-menu bot is a REAL live gameplay demo now:
-  // it can parry incoming projectiles just like the player.
-  for(const o of orbs){
-    if(o.parried) continue;
-    if(dist(o.x, o.y, player.x, player.y) <= 150){
-      tryParry();
-      break;
+    // Kill tiny floating-point drift so the gun settles exactly on target.
+    if(Math.abs(diff) < 0.0025){
+      botAimAngle = desiredAngle;
     }
+  }else{
+    // No enemy: keep the weapon moving naturally instead of freezing.
+    botAimAngle += dt * 0.28;
   }
 
-  // movement: hold a mid-range distance, strafing, back off if something
-  // gets too close, otherwise close the distance
-  let mv = { x:0, y:0 };
+  // Fake the real mouse position, BUT relative to the player's actual screen
+  // position rather than canvas center. This remains accurate even when the
+  // camera is clamped against a world edge.
+  const playerScreenX = player.x - camera.x;
+  const playerScreenY = player.y - camera.y;
+  const aimDistance = 650;
+
+  mouseScreen.x = playerScreenX + Math.cos(botAimAngle) * aimDistance;
+  mouseScreen.y = playerScreenY + Math.sin(botAimAngle) * aimDistance;
+
+  // ALWAYS use the normal parry system.
+  tryParry();
+
+  // Player-like combat movement: approach, then smoothly strafe around the
+  // nearest enemy while keeping the weapon pointed at that enemy.
+  let mv = {x:0,y:0};
+
   botStrafeTimer -= dt;
-  if(botStrafeTimer <= 0){ botStrafeDir *= -1; botStrafeTimer = 1.2 + Math.random()*1.4; }
+  if(botStrafeTimer <= 0){
+    botStrafeDir *= -1;
+    botStrafeTimer = 0.7 + Math.random() * 1.0;
+  }
 
   if(target){
-    if(bestD < 160){
-      mv.x = -Math.cos(botAimAngle); mv.y = -Math.sin(botAimAngle);
-    } else if(bestD > 380){
-      mv.x = Math.cos(botAimAngle); mv.y = Math.sin(botAimAngle);
-    } else {
-      mv.x = Math.cos(botAimAngle + Math.PI/2) * botStrafeDir;
-      mv.y = Math.sin(botAimAngle + Math.PI/2) * botStrafeDir;
+    const toX = target.x - player.x;
+    const toY = target.y - player.y;
+    const d = Math.hypot(toX,toY) || 1;
+    const nx = toX / d;
+    const ny = toY / d;
+
+    if(d > 310){
+      // Close distance while adding a little side movement.
+      mv.x = nx * 0.72 - ny * 0.28 * botStrafeDir;
+      mv.y = ny * 0.72 + nx * 0.28 * botStrafeDir;
+    }else{
+      // Stay in a fighting distance and circle the target.
+      mv.x = -ny * botStrafeDir;
+      mv.y =  nx * botStrafeDir;
+
+      if(d < 90){
+        mv.x += nx * 0.30;
+        mv.y += ny * 0.30;
+      }
     }
-  } else {
-    mv.x = Math.cos(botAimAngle);
-    mv.y = Math.sin(botAimAngle);
+  }else{
+    mv.x = Math.cos(botAimAngle) * 0.65
+         + Math.cos(botAimAngle + Math.PI/2) * 0.35 * botStrafeDir;
+    mv.y = Math.sin(botAimAngle) * 0.65
+         + Math.sin(botAimAngle + Math.PI/2) * 0.35 * botStrafeDir;
   }
 
-  // smooth the movement vector itself so direction changes ease in/out
-  // instead of instantly flipping - feels far less twitchy/robotic
-  const moveSmooth = Math.min(1, dt * 7);
+  // Smooth movement like a player holding/releasing WASD.
+  const moveSmooth = 1 - Math.exp(-10.0 * dt);
   botMoveX += (mv.x - botMoveX) * moveSmooth;
   botMoveY += (mv.y - botMoveY) * moveSmooth;
 
-  // MAIN MENU BOT COMBAT:
-  // Treat the demo character like a real player. It aims with the same mouse
-  // aim path used by shoot()/drawPlayer(), fires on a player-like cadence,
-  // dashes when an enemy gets close, and can parry incoming orbs.
-  // autoPilot is allowed to bypass weapon-unlock restrictions in shoot(), so
-  // the menu can demonstrate whichever weapon it is currently holding.
+  // Fire ONLY after the weapon has visually turned close enough to the target.
+  // This keeps shots accurate while preserving smooth turning.
   botFireTimer -= dt;
   if(target && botFireTimer <= 0){
-    shoot();
-    botFireTimer = weapon==='shotgun' ? 0.86 : 0.35;
+    const desiredAngle = Math.atan2(
+      target.y - player.y,
+      target.x - player.x
+    );
+
+    const aimError = Math.abs(Math.atan2(
+      Math.sin(desiredAngle - botAimAngle),
+      Math.cos(desiredAngle - botAimAngle)
+    ));
+
+    if(aimError < 0.045){
+      shoot();
+
+      botFireTimer = weapon === 'shotgun'
+        ? Math.max(0.48, player.shotgunRate)
+        : Math.max(0.18, player.fireRate);
+    }else{
+      // Re-check very quickly while the bot is turning instead of waiting for
+      // the full weapon fire cooldown.
+      botFireTimer = 0.025;
+    }
   }
 
+  // Dash during combat, never as an escape-to-corner maneuver.
   botDashTimer -= dt;
-  if(botDashTimer <= 0 && target && bestD < 220){
-    tryDash();
-    botDashTimer = 1.4 + Math.random()*1.2;
+  if(target && botDashTimer <= 0){
+    if(bestD < 240 || Math.random() < 0.18){
+      player.lastDir = {
+        x: Math.cos(botAimAngle),
+        y: Math.sin(botAimAngle)
+      };
+      tryDash();
+    }
+    botDashTimer = 0.9 + Math.random() * 1.3;
   }
 
-  // occasionally swap weapons just to show both off
+  // Occasionally swap weapons so the menu demo visibly uses both.
   botWeaponTimer -= dt;
   if(botWeaponTimer <= 0){
     weapon = weapon === 'gun' ? 'shotgun' : 'gun';
-    botWeaponTimer = 4 + Math.random()*4;
+    botWeaponTimer = 4 + Math.random() * 4;
   }
 
-  return { x: botMoveX, y: botMoveY };
+  return {x:botMoveX, y:botMoveY};
 }
 
 // ---------- BULLETS (player) ----------
@@ -1307,14 +1368,9 @@ function update(dt){
   // Editor and main-menu previews must never run the real combat simulation.
   // This is intentionally before enemy spawning/projectile/combat logic.
   if(editorOpen && !editorTestMode) return;
-  // Main-menu entities use the same enemy simulation/spawn system as stages.
-  // Do NOT clear enemies here: doing so every frame made menu monsters invisible.
-  if(inMenu && !playingReal){
-    bullets.length = 0;
-    swordProjectiles.length = 0;
-    cubeBullets.length = 0;
-    orbs.length = 0;
-  }
+  // Main-menu demo is a real live gameplay simulation.
+  // IMPORTANT: never clear bullets/orbs here; the bot's projectiles must
+  // survive long enough to be rendered and hit enemies, just like gameplay.
   updateCubeDialogue(dt);
   if(!cubeDialogueActive && cubeCloneSpawnTimer >= 0){
     cubeCloneSpawnTimer -= dt;
