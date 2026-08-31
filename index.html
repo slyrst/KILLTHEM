@@ -3551,5 +3551,128 @@ window.drawScaleHandles=function(ctx,obj){
 
 })();
 </script>
+
+<script id="menuEditorHideFix">
+(function(){
+
+function hideMenusForEditor(){
+    const ids=[
+        "mainMenu",
+        "playBtn",
+        "settingsBtn",
+        "diffCorner",
+        "stageSelect",
+        "bossStageSelect",
+        "makeLevelsBtn"
+    ];
+
+    ids.forEach(id=>{
+        const el=document.getElementById(id);
+        if(el){
+            el.style.display="none";
+            el.style.pointerEvents="none";
+            el.style.visibility="hidden";
+        }
+    });
+
+    const editor=document.getElementById("levelEditor");
+    if(editor){
+        editor.style.display="block";
+        editor.classList.add("show");
+        editor.style.zIndex="9999";
+    }
+}
+
+function restoreMenus(){
+    const menu=document.getElementById("mainMenu");
+    if(menu){
+        menu.style.display="";
+        menu.style.visibility="";
+        menu.style.pointerEvents="";
+    }
+}
+
+// watch editor opening
+const obs=new MutationObserver(()=>{
+    const editor=document.getElementById("levelEditor");
+    if(editor && (editor.classList.contains("show") || editor.style.display==="block")){
+        hideMenusForEditor();
+    }
+});
+
+obs.observe(document.body,{attributes:true,childList:true,subtree:true});
+
+// override common editor open functions
+window.addEventListener("load",()=>{
+    hideMenusForEditor();
+});
+
+window.hideMenusForEditor=hideMenusForEditor;
+window.restoreMenus=restoreMenus;
+
+})();
+</script>
+
+<script id="realPlayStateFix">
+(function(){
+
+function forceEditorState(){
+    window.editorTestMode = false;
+    window.playingReal = false;
+    window.inMenu = false;
+    window.autoPilot = false;
+
+    const hide = [
+        "mainMenu",
+        "settingsScreen",
+        "stageSelect",
+        "bossStageSelect",
+        "playBtn",
+        "settingsBtn",
+        "diffCorner"
+    ];
+
+    hide.forEach(id=>{
+        const e=document.getElementById(id);
+        if(e){
+            e.style.display="none";
+            e.style.visibility="hidden";
+            e.style.pointerEvents="none";
+        }
+    });
+}
+
+function forceMenuState(){
+    window.editorTestMode = false;
+    window.playingReal = false;
+    window.inMenu = true;
+    window.autoPilot = true;
+
+    const m=document.getElementById("mainMenu");
+    if(m){
+        m.style.display="block";
+        m.style.visibility="visible";
+        m.style.pointerEvents="auto";
+    }
+}
+
+/* Editor açıldığında gerçek oyun state'ini kilitle */
+document.addEventListener("click",e=>{
+    const target=e.target;
+    if(target && (
+        target.id==="makeLevelsBtn" ||
+        target.closest("#makeLevelsBtn") ||
+        target.id==="edPlay"
+    )){
+        setTimeout(forceEditorState,50);
+    }
+});
+
+/* Main menuye dönünce player kontrolünü geri verme */
+window.realBackToMenuFix=forceMenuState;
+window.realEditorFix=forceEditorState;
+
+})();
+</script>
 </body>
 </html>
