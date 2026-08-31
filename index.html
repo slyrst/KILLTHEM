@@ -746,15 +746,6 @@ function backToMainMenu(){
   waveDifficulty = 1;
 }
 
-function spawnMainMenuEntities(){
-  enemies.length=0;
-  const cx=player.x, cy=player.y;
-  const make=(type,x,y,radius)=>{
-    const hp=type==='green'?60:type==='glob'?40:90;
-    enemies.push({type,x,y,radius,hp,maxHp:hp,speed:0,state:'idle',stateTimer:0,dmg:0,hitCooldown:0,fireTimer:999,swordTimer:999,swordCooldown:999,swordSwing:0,swordAngle:0,swordScale:1.35,buffed:false,parryFlash:0,group:0,isMenuEntity:true});
-  };
-  make('green',cx+250,cy-120,24); make('glob',cx+20,cy-260,26); make('knight',cx-260,cy-100,26);
-}
 
 function tryParry(){
   if(!player.alive || parryCooldown > 0) return;
@@ -913,7 +904,7 @@ function tryParry(){
   // (like the boss's 5-orb burst) can each still be parried in turn.
   if(parried || shotgunParried || swordParried || cubeBulletParried){
     parryCooldown = 0.08;
-    if(!autoPilot) playSFX(SFX.parry, parryVolume);
+    playSFX(SFX.parry, parryVolume);
   }
 }
 
@@ -944,7 +935,7 @@ function tryDash(){
   player.dashTimer = player.dashDuration;
   player.dashCooldown = player.dashCooldownMax;
   player.invuln = Math.max(player.invuln, player.dashDuration + 0.08);
-  if(!autoPilot) playSFX(SFX.dash, 0.6);
+  playSFX(SFX.dash, 0.6);
 }
 
 function playerPortrait(){
@@ -984,15 +975,13 @@ function updateAutoPilot(dt){
   mouseScreen.x = canvas.width/2 + Math.cos(botAimAngle) * 140;
   mouseScreen.y = canvas.height/2 + Math.sin(botAimAngle) * 140;
 
-  // Main menu preview never fights. Keep the character moving visually,
-  // but completely disable parry/combat automation there.
-  if(!inMenu){
-    for(const o of orbs){
-      if(o.parried) continue;
-      if(dist(o.x, o.y, player.x, player.y) <= 150){
-        tryParry();
-        break;
-      }
+  // The main-menu bot is a REAL live gameplay demo now:
+  // it can parry incoming projectiles just like the player.
+  for(const o of orbs){
+    if(o.parried) continue;
+    if(dist(o.x, o.y, player.x, player.y) <= 150){
+      tryParry();
+      break;
     }
   }
 
@@ -1022,20 +1011,22 @@ function updateAutoPilot(dt){
   botMoveX += (mv.x - botMoveX) * moveSmooth;
   botMoveY += (mv.y - botMoveY) * moveSmooth;
 
-  // The menu bot is visual-only: no bullets, parries or dashes.
-  // Real gameplay (and editor Play Test) keeps the full bot combat behavior.
-  if(!inMenu){
-    botFireTimer -= dt;
-    if(target && botFireTimer <= 0){
-      shoot();
-      botFireTimer = weapon==='shotgun' ? 0.86 : 0.35;
-    }
+  // MAIN MENU BOT COMBAT:
+  // Treat the demo character like a real player. It aims with the same mouse
+  // aim path used by shoot()/drawPlayer(), fires on a player-like cadence,
+  // dashes when an enemy gets close, and can parry incoming orbs.
+  // autoPilot is allowed to bypass weapon-unlock restrictions in shoot(), so
+  // the menu can demonstrate whichever weapon it is currently holding.
+  botFireTimer -= dt;
+  if(target && botFireTimer <= 0){
+    shoot();
+    botFireTimer = weapon==='shotgun' ? 0.86 : 0.35;
+  }
 
-    botDashTimer -= dt;
-    if(botDashTimer <= 0 && target && bestD < 220){
-      tryDash();
-      botDashTimer = 1.4 + Math.random()*1.2;
-    }
+  botDashTimer -= dt;
+  if(botDashTimer <= 0 && target && bestD < 220){
+    tryDash();
+    botDashTimer = 1.4 + Math.random()*1.2;
   }
 
   // occasionally swap weapons just to show both off
@@ -1066,13 +1057,17 @@ function spawnWeaponPickup(type, x, y){
 }
 function shoot(){
   if(player.fireCooldown > 0 || !player.alive) return;
-  if(!autoPilot && (!weapon || !unlockedWeapons[weapon])) return; // can't fire a weapon that hasn't been picked up yet
+  if(!autoPilot && (!weapon || !unlockedWeapons[weapon])) {
+    // Never leave the player unable to fire: the normal gun is the fallback.
+    // Shotgun still requires its normal unlock.
+    if(weapon !== 'shotgun') weapon = 'gun';
+  }
   const mw = mouseWorld();
   const ang = Math.atan2(mw.y - player.y, mw.x - player.x);
   const muzzleDist = player.radius + 18;
   if(weapon === 'shotgun'){
     player.fireCooldown = player.shotgunRate;
-    if(!autoPilot) playSFX(SFX.shotgun, 0.7);
+    playSFX(SFX.shotgun, 0.7);
     // 3 pellets: gerçek shotgun gibi her pellet farklı bir yöne açılır.
     // Hepsi aynı namlu noktasından çıkar; sadece uçuş açıları farklıdır.
     // Böylece mermiler yan yana paralel gitmez, ilerledikçe yayılır.
@@ -1094,7 +1089,7 @@ function shoot(){
     }
   } else {
     player.fireCooldown = player.fireRate;
-    if(!autoPilot) playSFX(SFX.shoot, 0.55);
+    playSFX(SFX.shoot, 0.55);
     bullets.push({x:player.x+Math.cos(ang)*muzzleDist,y:player.y+Math.sin(ang)*muzzleDist,vx:Math.cos(ang)*780,vy:Math.sin(ang)*780,dmg:22*DIFF.playerDmgMult,type:'gun'});
   }
 }
@@ -1634,7 +1629,6 @@ function update(dt){
   // ----- enemy AI -----
   for(const e of enemies){
     if(e.hitFlash > 0) e.hitFlash -= dt;
-    if(inMenu && e.isMenuEntity) continue;
     if(e.type === 'green') updateGreen(e, dt);
     else if(e.type === 'glob') updateGlob(e, dt);
     else if(e.type === 'knight') updateKnight(e, dt);
@@ -3345,8 +3339,6 @@ function loop(now){
   render();
   requestAnimationFrame(loop);
 }
-if(inMenu) spawnMainMenuEntities();
-
 requestAnimationFrame(loop);
 
 </script>
