@@ -3674,5 +3674,55 @@ window.realEditorFix=forceEditorState;
 
 })();
 </script>
+
+<script id="makeLevelsCrashFix">
+(function(){
+
+// Make Levels crash protection
+window.addEventListener("error",function(e){
+    if(String(e.message).includes("editor") || String(e.message).includes("stopEverything")){
+        console.warn("Editor error recovered:",e.message);
+    }
+});
+
+const oldOpen=window.openEditor;
+
+window.openEditor=function(level){
+    try{
+        if(typeof stopEverythingForEditor==="function"){
+            stopEverythingForEditor();
+        }
+
+        window.gameStarted=false;
+        window.playingReal=false;
+        window.autoPilot=false;
+        window.inMenu=false;
+
+        const editor=document.getElementById("levelEditor");
+        if(!editor){
+            console.error("levelEditor missing");
+            return;
+        }
+
+        editor.classList.add("show");
+        editor.style.display="block";
+
+        if(typeof oldOpen==="function"){
+            return oldOpen(level);
+        }
+
+    }catch(err){
+        console.error("MAKE LEVELS FIX:",err);
+
+        const editor=document.getElementById("levelEditor");
+        if(editor){
+            editor.classList.add("show");
+            editor.style.display="block";
+        }
+    }
+};
+
+})();
+</script>
 </body>
 </html>
