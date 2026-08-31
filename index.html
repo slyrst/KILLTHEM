@@ -249,36 +249,18 @@
 #cubeSubtitle{font-size:26px;font-weight:700;line-height:1.35;min-height:36px;}
 #cubeDialogue.silence #cubeSubtitle{opacity:0;}
 
-/* ================= CUSTOM STAGE 3 EDITOR ================= */
-#makeLevelsBtn{position:fixed;right:34px;bottom:34px;z-index:61;display:none}
-#makeLevelsBtn.show{display:block}
-#levelEditor{position:fixed;inset:0;z-index:200;display:none;background:#090b0d;color:#fff;pointer-events:auto}
-#levelEditor.show{display:block}
-#editorTop{height:54px;background:#11161b;border-bottom:2px solid #39ff6e;display:flex;align-items:center;gap:10px;padding:0 14px;box-sizing:border-box;position:relative;z-index:5}
-#editorTop input,#editorTop select,#editorSide input,#editorSide select{background:#090c0f;color:#fff;border:1px solid #555;padding:7px 9px;box-sizing:border-box}
-#editorTop .edTitle{font-weight:900;letter-spacing:2px;margin-right:8px;color:#39ff6e}
-.edBtn{background:#151b20;color:#fff;border:1px solid #777;padding:8px 12px;font-weight:800;cursor:pointer}
-.edBtn:hover{border-color:#39ff6e;color:#39ff6e}
-.edBtn.active{background:#17351f;border-color:#39ff6e;color:#39ff6e}
-#editorCanvas{position:absolute;left:0;top:54px;right:310px;bottom:0;background:#15191d;cursor:crosshair}
-#editorSide{position:absolute;right:0;top:54px;bottom:0;width:310px;background:#101418;border-left:2px solid #333;padding:14px;box-sizing:border-box;overflow:auto}
-#editorSide h3{margin:8px 0;color:#39ff6e;letter-spacing:2px;font-size:14px}
-.edRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
-.edRow.one{grid-template-columns:1fr}
-.edRow label{font-size:11px;color:#aaa;display:block;margin-bottom:4px;letter-spacing:1px}
-.edToolGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.edTool{min-height:40px}
-#editorStatus{font-size:11px;color:#aaa;line-height:1.45;margin-top:12px;padding-top:10px;border-top:1px solid #333}
-#editorObjects{max-height:180px;overflow:auto;border:1px solid #333;background:#0a0d10}
-.edObj{padding:7px;border-bottom:1px solid #252a2e;font-size:11px;cursor:pointer}
-.edObj:hover{background:#172019}.edObj.sel{background:#19311f;color:#39ff6e}
-#creatorModal{position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.86);display:none;align-items:center;justify-content:center;pointer-events:auto}
-#creatorModal.show{display:flex}
-#creatorBox{width:360px;background:#111;border:2px solid #39ff6e;padding:24px;box-shadow:0 0 40px rgba(57,255,110,.2)}
-#creatorBox input{width:100%;box-sizing:border-box;background:#000;color:#fff;border:1px solid #555;padding:12px;margin:12px 0}
-#creatorError{color:#ff5555;min-height:18px;font-size:12px}
-#levelPublishedNotice{position:fixed;left:50%;top:76px;transform:translateX(-50%);z-index:220;background:#0b1d11;border:1px solid #39ff6e;color:#39ff6e;padding:7px 13px;display:none;font-weight:bold;font-size:12px}
-#levelPublishedNotice.show{display:block}
+/* ================= ULTRAKILL-STYLE LEVEL EDITOR ================= */
+  #makeLevelsBtn{position:fixed;right:34px;bottom:34px;z-index:61;display:none}.bigBtn{}
+  #makeLevelsBtn.show{display:block}#levelEditor{position:fixed;inset:0;z-index:200;display:none;background:#080a0c;color:#fff;pointer-events:auto;overflow:hidden}#levelEditor.show{display:block}
+  #editorTop{height:58px;background:linear-gradient(#151a1f,#0d1115);border-bottom:2px solid #39ff6e;display:flex;align-items:center;gap:8px;padding:0 12px;box-sizing:border-box;position:relative;z-index:8;box-shadow:0 4px 20px rgba(0,0,0,.45)}
+  #editorTop input,#editorTop select,#editorSide input,#editorSide select{background:#080b0e;color:#fff;border:1px solid #4a525a;padding:7px 9px;box-sizing:border-box;outline:none}#editorTop input:focus,#editorTop select:focus,#editorSide input:focus,#editorSide select:focus{border-color:#39ff6e}
+  #editorTop .edTitle{font-weight:900;letter-spacing:3px;margin-right:8px;color:#39ff6e;font-size:13px}.edBtn{background:#12181d;color:#fff;border:1px solid #606970;padding:8px 11px;font-weight:900;cursor:pointer;letter-spacing:1px}.edBtn:hover{border-color:#39ff6e;color:#39ff6e;background:#16241a}.edBtn.active{background:#17351f;border-color:#39ff6e;color:#39ff6e}.edBtn.test{border-color:#fff;background:#fff;color:#050505}
+  #editorCanvas{position:absolute;left:0;top:58px;right:330px;bottom:0;background:#101419;cursor:crosshair;display:block}#editorSide{position:absolute;right:0;top:58px;bottom:0;width:330px;background:#0d1115;border-left:2px solid #292f34;padding:12px;box-sizing:border-box;overflow:auto}
+  #editorSide h3{margin:9px 0;color:#39ff6e;letter-spacing:2px;font-size:12px;border-bottom:1px solid #263029;padding-bottom:6px}.edRow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:7px 0}.edRow.one{grid-template-columns:1fr}.edRow label{font-size:10px;color:#89939b;display:block;margin-bottom:4px;letter-spacing:1px}.edToolGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.edTool{min-height:38px;font-size:11px}
+  #editorStatus{font-size:10px;color:#89939b;line-height:1.5;margin-top:10px;padding-top:9px;border-top:1px solid #292f34}#editorObjects{max-height:210px;overflow:auto;border:1px solid #292f34;background:#07090b}.edObj{padding:7px 8px;border-bottom:1px solid #20262b;font-size:10px;cursor:pointer}.edObj:hover{background:#172019}.edObj.sel{background:#19311f;color:#39ff6e}
+  #creatorModal{position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.86);display:none;align-items:center;justify-content:center;pointer-events:auto}#creatorModal.show{display:flex}#creatorBox{width:360px;background:#111;border:2px solid #39ff6e;padding:24px;box-shadow:0 0 40px rgba(57,255,110,.2)}#creatorBox input{width:100%;box-sizing:border-box;background:#000;color:#fff;border:1px solid #555;padding:12px;margin:12px 0}#creatorError{color:#ff5555;min-height:18px;font-size:12px}
+  #levelPublishedNotice{position:fixed;left:50%;top:76px;transform:translateX(-50%);z-index:300;background:#0b1d11;border:1px solid #39ff6e;color:#39ff6e;padding:7px 13px;display:none;font-weight:bold;font-size:12px;pointer-events:none}#levelPublishedNotice.show{display:block}
+  #editorMini{position:absolute;left:14px;bottom:14px;z-index:6;background:rgba(5,7,9,.84);border:1px solid #394148;padding:8px;pointer-events:none;font:10px monospace;color:#aeb8bf}#editorHint{position:absolute;left:14px;top:68px;z-index:6;background:rgba(5,7,9,.76);border:1px solid #30383e;padding:7px 9px;color:#9ba5ab;font-size:10px;pointer-events:none}#editorMapPreview{position:absolute;right:342px;bottom:14px;width:190px;height:105px;background:#050607;border:1px solid #485058;z-index:6;pointer-events:none;opacity:.92}
 </style>
 </head>
 <body>
@@ -386,53 +368,7 @@
   </div>
 </div>
 <div id="levelPublishedNotice">LEVEL DATA SAVED</div>
-<div id="levelEditor">
-  <div id="editorTop">
-    <span class="edTitle">STAGE 3 EDITOR</span>
-    <input id="edLevelName" value="UNTITLED" style="width:150px" title="Level name">
-    <select id="edMusic" style="width:145px">
-      <option value="musics/game.mp3">game.mp3</option>
-      <option value="musics/game2.mp3">game2.mp3</option>
-      <option value="musics/Divine.mp3">Divine.mp3</option>
-      <option value="musics/elevator.mp3">elevator.mp3</option>
-      <option value="">NO MUSIC</option>
-    </select>
-    <button class="edBtn" id="edNew">NEW</button>
-    <button class="edBtn" id="edSave">SAVE</button>
-    <button class="edBtn" id="edPublish">PUBLISH STAGE 3</button><button class="edBtn" id="edExport">EXPORT JSON</button>
-    <button class="edBtn" id="edPlay">PLAY TEST</button>
-    <button class="edBtn" id="edExit">EXIT</button>
-  </div>
-  <canvas id="editorCanvas"></canvas>
-  <aside id="editorSide">
-    <h3>MAP</h3>
-    <div class="edRow">
-      <div><label>WIDTH</label><input id="edMapW" type="number" value="6000" min="1000" step="100"></div>
-      <div><label>HEIGHT</label><input id="edMapH" type="number" value="3000" min="700" step="100"></div>
-    </div>
-    <div class="edRow"><div><label>GRID SIZE</label><input id="edGrid" type="number" value="50" min="10" step="10"></div><div><label>ZOOM</label><input id="edZoom" type="number" value="1" min="0.2" max="3" step="0.1"></div></div>
-    <div class="edRow"><div><label>BACKGROUND</label><input id="edBg" value="images/Map.png"></div><div><label>BG TILE SIZE</label><input id="edBgTile" type="number" value="512" min="64" step="64"></div></div>
-    <h3>TOOLS</h3>
-    <div class="edToolGrid">
-      <button class="edBtn edTool" data-tool="select">SELECT</button>
-      <button class="edBtn edTool" data-tool="spawn">PLAYER SPAWN</button>
-      <button class="edBtn edTool" data-tool="tree">TREE</button>
-      <button class="edBtn edTool" data-tool="wall">WALL</button>
-      <button class="edBtn edTool" data-tool="green">GREEN</button>
-      <button class="edBtn edTool" data-tool="glob">GLOB</button>
-      <button class="edBtn edTool" data-tool="knight">KNIGHT</button>
-      <button class="edBtn edTool" data-tool="trigger">TOUCH TRIGGER</button>
-    </div>
-    <h3>SELECTED OBJECT</h3>
-    <div class="edRow"><div><label>X</label><input id="edX" type="number"></div><div><label>Y</label><input id="edY" type="number"></div></div>
-    <div class="edRow"><div><label>WIDTH</label><input id="edObjW" type="number" value="100"></div><div><label>HEIGHT</label><input id="edObjH" type="number" value="100"></div></div>
-    <div class="edRow"><div><label>GROUP ID</label><input id="edGroup" type="number" value="1" min="1"></div><div><label>ROTATION</label><input id="edRot" type="number" value="0" step="15"></div></div>
-    <div class="edRow one"><div><label>TRIGGER ACTION</label><select id="edAction"><option value="spawn">SPAWN GROUP</option><option value="music">CHANGE MUSIC</option><option value="delay">DELAY GROUP</option><option value="end">END LEVEL</option></select></div></div>
-    <div class="edRow one"><button class="edBtn" id="edDelete">DELETE SELECTED</button></div>
-    <h3>OBJECTS</h3><div id="editorObjects"></div>
-    <div id="editorStatus"></div>
-  </aside>
-</div>
+<div id="levelEditor"><div id="editorTop"><span class="edTitle">LEVEL EDITOR</span><input id="edLevelName" value="UNTITLED" style="width:145px"><select id="edMusic" style="width:145px"><option value="musics/game.mp3">game.mp3</option><option value="musics/game2.mp3">game2.mp3</option><option value="musics/Divine.mp3">Divine.mp3</option><option value="musics/elevator.mp3">elevator.mp3</option><option value="">NO MUSIC</option></select><button class="edBtn" id="edNew">NEW</button><button class="edBtn" id="edUndo">UNDO</button><button class="edBtn" id="edRedo">REDO</button><button class="edBtn" id="edSave">SAVE</button><button class="edBtn" id="edPublish">PUBLISH</button><button class="edBtn test" id="edPlay">▶ PLAY TEST</button><button class="edBtn" id="edExit">EXIT</button></div><div id="editorHint">LMB place/select · MMB/RMB pan · Wheel zoom · Delete remove · Ctrl+Z undo · Ctrl+Y redo · ESC back</div><div id="editorMini">EDITOR READY</div><canvas id="editorCanvas"></canvas><canvas id="editorMapPreview" width="380" height="210"></canvas><aside id="editorSide"><h3>MAP / ARENA</h3><div class="edRow"><div><label>WIDTH</label><input id="edMapW" type="number" value="6000" min="1000" step="100"></div><div><label>HEIGHT</label><input id="edMapH" type="number" value="3000" min="700" step="100"></div></div><div class="edRow"><div><label>GRID</label><input id="edGrid" type="number" value="50" min="10" step="10"></div><div><label>ZOOM</label><input id="edZoom" type="number" value="1" min="0.2" max="3" step="0.1"></div></div><div class="edRow"><div><label>BACKGROUND</label><input id="edBg" value="images/Map.png"></div><div><label>TILE SIZE</label><input id="edBgTile" type="number" value="512" min="64" step="64"></div></div><h3>BUILD / COMBAT</h3><div class="edToolGrid"><button class="edBtn edTool active" data-tool="select">SELECT</button><button class="edBtn edTool" data-tool="spawn">SPAWN</button><button class="edBtn edTool" data-tool="wall">WALL</button><button class="edBtn edTool" data-tool="tree">TREE</button><button class="edBtn edTool" data-tool="green">GREEN</button><button class="edBtn edTool" data-tool="glob">GLOB</button><button class="edBtn edTool" data-tool="knight">KNIGHT</button><button class="edBtn edTool" data-tool="trigger">TRIGGER</button></div><h3>SELECTED</h3><div class="edRow"><div><label>X</label><input id="edX" type="number"></div><div><label>Y</label><input id="edY" type="number"></div></div><div class="edRow"><div><label>WIDTH</label><input id="edObjW" type="number" value="100"></div><div><label>HEIGHT</label><input id="edObjH" type="number" value="100"></div></div><div class="edRow"><div><label>GROUP</label><input id="edGroup" type="number" value="0" min="0"></div><div><label>ROTATION</label><input id="edRot" type="number" value="0" step="15"></div></div><div class="edRow one"><div><label>TRIGGER ACTION</label><select id="edAction"><option value="spawn">SPAWN GROUP</option><option value="music">CHANGE MUSIC</option><option value="delay">DELAY GROUP</option><option value="end">END LEVEL</option></select></div></div><div class="edRow"><button class="edBtn" id="edDuplicate">DUPLICATE</button><button class="edBtn" id="edDelete">DELETE</button></div><h3>OBJECTS</h3><div id="editorObjects"></div><div id="editorStatus"></div></aside></div></div>
 <script src="levels.js"></script>
 <script>
 /* ======================================================================
@@ -3220,137 +3156,15 @@ document.getElementById('playBtn').addEventListener('click', () => {
 });
 
 
-/* ================= CREATOR-ONLY LEVEL EDITOR =================
-   Browser-only level authoring. Published levels are stored in localStorage
-   and can be exported into game files. No VPS is required for authoring.
-*/
-const CREATOR_UNLOCK_KEY='kt_creator_unlocked_v1';
-const CREATOR_PASSWORD_HASH='18b071f5'; // change this string and the check below if desired
-let creatorUnlocked=localStorage.getItem(CREATOR_UNLOCK_KEY)==='1';
-const makeLevelsBtn=document.getElementById('makeLevelsBtn');
-const creatorModal=document.getElementById('creatorModal');
-const editor=document.getElementById('levelEditor');
-const ec=document.getElementById('editorCanvas');
-const ectx=ec.getContext('2d');
-let editorOpen=false, editorDragging=false, editorLast={x:0,y:0}, editorSelected=null;
-let editorTool='select', editorPan={x:0,y:0}, editorLevel=null;
-const BUILTIN_STAGE3_LEVELS = window.BUILTIN_STAGE3_LEVELS || [];
-const publishedLevels=JSON.parse(localStorage.getItem('kt_published_stage3')||'[]');
-
-function simpleCreatorHash(v){
-  let h=2166136261; for(let i=0;i<v.length;i++){h^=v.charCodeAt(i); h=Math.imul(h,16777619)}
-  return ('00000000'+(h>>>0).toString(16)).slice(-8);
-}
-// Default creator password is intentionally simple to replace. The editor is
-// hidden from normal players; this is not server-side security.
-function creatorPasswordOK(v){return typeof v==='string' && v.trim()==='ultra';}
-function updateCreatorUI(){makeLevelsBtn.classList.toggle('show',creatorUnlocked)}
-updateCreatorUI();
-window.addEventListener('keydown',e=>{
-  if((e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='l') && !editorOpen){e.preventDefault();creatorModal.classList.add('show');document.getElementById('creatorPassword').focus();}
-});
-document.getElementById('creatorEnter').onclick=()=>{
-  const pass=document.getElementById('creatorPassword').value;
-  if(creatorPasswordOK(pass)){creatorUnlocked=true;localStorage.setItem(CREATOR_UNLOCK_KEY,'1');creatorModal.classList.remove('show');updateCreatorUI();openEditor();}
-  else document.getElementById('creatorError').textContent='Wrong creator password.';
-};
-document.getElementById('creatorCancel').onclick=()=>creatorModal.classList.remove('show');
-makeLevelsBtn.onclick=()=>{if(creatorUnlocked)openEditor();};
-function editorResize(){ec.width=Math.max(300,window.innerWidth-310);ec.height=Math.max(300,window.innerHeight-54);}
-window.addEventListener('resize',()=>{if(editorOpen){editorResize();editorRender();}});
-function blankLevel(){return {version:2,name:'UNTITLED',stage:3,music:'musics/game.mp3',map:{w:6000,h:3000,grid:50,background:'images/Map.png',tile:512},spawn:{x:300,y:300},objects:[]};}
-function cloneData(x){return JSON.parse(JSON.stringify(x));}
-function openEditor(level){
-  editorOpen=true; editor.classList.add('show'); editorResize();
-  editorLevel=cloneData(level||publishedLevels[publishedLevels.length-1]||blankLevel());
-  loadEditorFields(); editorRender();
-}
-function closeEditor(){editorOpen=false;editor.classList.remove('show');editorSelected=null;}
-function loadEditorFields(){
-  const L=editorLevel; document.getElementById('edLevelName').value=L.name; document.getElementById('edMusic').value=L.music||'';
-  document.getElementById('edMapW').value=L.map.w;document.getElementById('edMapH').value=L.map.h;document.getElementById('edGrid').value=L.map.grid||50;document.getElementById('edBg').value=L.map.background||'';document.getElementById('edBgTile').value=L.map.tile||512;
-  if(L.selectedId){editorSelected=L.objects.find(o=>o.id===L.selectedId)||null;} updateSelectedFields();updateObjectList();
-}
-function readEditorFields(){
-  editorLevel.name=document.getElementById('edLevelName').value.trim()||'UNTITLED';editorLevel.music=document.getElementById('edMusic').value;
-  editorLevel.map.w=Math.max(1000,+document.getElementById('edMapW').value||6000);editorLevel.map.h=Math.max(700,+document.getElementById('edMapH').value||3000);editorLevel.map.grid=Math.max(10,+document.getElementById('edGrid').value||50);editorLevel.map.background=document.getElementById('edBg').value.trim();editorLevel.map.tile=Math.max(64,+document.getElementById('edBgTile').value||512);
-  if(editorSelected){editorSelected.x=+document.getElementById('edX').value||0;editorSelected.y=+document.getElementById('edY').value||0;editorSelected.w=Math.max(10,+document.getElementById('edObjW').value||100);editorSelected.h=Math.max(10,+document.getElementById('edObjH').value||100);editorSelected.group=Math.max(0,+document.getElementById('edGroup').value||0);editorSelected.rotation=+document.getElementById('edRot').value||0;editorSelected.action=document.getElementById('edAction').value;}
-}
-function updateSelectedFields(){
-  const o=editorSelected; const ids=['edX','edY','edObjW','edObjH','edGroup','edRot'];
-  if(!o){ids.forEach(id=>document.getElementById(id).value='');document.getElementById('edAction').value='spawn';return;}
-  document.getElementById('edX').value=Math.round(o.x);document.getElementById('edY').value=Math.round(o.y);document.getElementById('edObjW').value=Math.round(o.w);document.getElementById('edObjH').value=Math.round(o.h);document.getElementById('edGroup').value=o.group||0;document.getElementById('edRot').value=o.rotation||0;document.getElementById('edAction').value=o.action||'spawn';
-}
-function editorWorldToScreen(x,y){return {x:(x-editorPan.x)*editorZoom(),y:(y-editorPan.y)*editorZoom()};}
-function editorScreenToWorld(x,y){return {x:x/editorZoom()+editorPan.x,y:y/editorZoom()+editorPan.y};}
-function editorZoom(){return Math.max(.2,Math.min(3,+document.getElementById('edZoom').value||1));}
-function snap(v){const g=Math.max(1,+document.getElementById('edGrid').value||50);return Math.round(v/g)*g;}
-function editorHit(x,y){
-  const w=editorScreenToWorld(x,y);
-  for(let i=editorLevel.objects.length-1;i>=0;i--){const o=editorLevel.objects[i];if(o.type==='trigger'||o.type==='tree'||o.type==='wall'||o.type==='green'||o.type==='glob'||o.type==='knight'){if(Math.abs(w.x-o.x)<=o.w/2&&Math.abs(w.y-o.y)<=o.h/2)return o;}}
-  return null;
-}
-function newEditorObject(type,x,y){
-  const base={id:'o'+Date.now()+Math.random().toString(36).slice(2,6),type,x:snap(x),y:snap(y),w:100,h:100,rotation:0,group:1,action:'spawn'};
-  if(type==='spawn'){base.w=50;base.h=50;editorLevel.spawn={x:base.x,y:base.y};return base;}
-  if(type==='tree'){base.w=110;base.h=140;}
-  if(type==='wall'){base.w=180;base.h=100;}
-  if(type==='green'||type==='glob'){base.w=60;base.h=60;}
-  if(type==='knight'){base.w=70;base.h=70;}
-  if(type==='trigger'){base.w=180;base.h=180;}
-  return base;
-}
-function addEditorObject(type,x,y){
-  const o=newEditorObject(type,x,y); editorLevel.objects.push(o);editorSelected=o;editorLevel.selectedId=o.id;updateSelectedFields();updateObjectList();editorRender();}
-function updateObjectList(){
-  const box=document.getElementById('editorObjects');box.innerHTML='';editorLevel.objects.forEach((o,i)=>{const d=document.createElement('div');d.className='edObj'+(o===editorSelected?' sel':'');d.textContent=`${i+1}. ${o.type.toUpperCase()}  (${Math.round(o.x)},${Math.round(o.y)}) G${o.group||0}`;d.onclick=()=>{editorSelected=o;editorLevel.selectedId=o.id;updateSelectedFields();updateObjectList();editorRender();};box.appendChild(d);});
-}
-function drawEditorImage(path,x,y,w,h,rot,alpha=1){const img=loadImg(path);if(img.loaded){ectx.save();ectx.globalAlpha=alpha;ectx.translate(x,y);ectx.rotate((rot||0)*Math.PI/180);ectx.imageSmoothingEnabled=false;ectx.drawImage(img,-w/2,-h/2,w,h);ectx.restore();}}
-function editorRender(){
-  if(!editorOpen)return; ectx.clearRect(0,0,ec.width,ec.height);const z=editorZoom();
-  ectx.fillStyle='#101419';ectx.fillRect(0,0,ec.width,ec.height);
-  // Repeating background. It is tiled, never stretched.
-  const bg=new Image();bg.src=editorLevel.map.background||'';
-  const tile=editorLevel.map.tile||512; const startX=Math.floor(editorPan.x/tile)*tile;const startY=Math.floor(editorPan.y/tile)*tile;
-  if(bg.complete&&bg.naturalWidth){for(let y=startY;y<editorPan.y+ec.height/z+tile;y+=tile)for(let x=startX;x<editorPan.x+ec.width/z+tile;x+=tile){const p=editorWorldToScreen(x,y);ectx.globalAlpha=.62;ectx.drawImage(bg,p.x,p.y,tile*z,tile*z);}ectx.globalAlpha=1;}
-  // Grid and world boundary
-  const g=editorLevel.map.grid||50;ectx.strokeStyle='rgba(255,255,255,.10)';ectx.lineWidth=1;
-  for(let x=Math.floor(editorPan.x/g)*g;x<editorPan.x+ec.width/z+g;x+=g){const p=editorWorldToScreen(x,0);ectx.beginPath();ectx.moveTo(p.x,0);ectx.lineTo(p.x,ec.height);ectx.stroke();}
-  for(let y=Math.floor(editorPan.y/g)*g;y<editorPan.y+ec.height/z+g;y+=g){const p=editorWorldToScreen(0,y);ectx.beginPath();ectx.moveTo(0,p.y);ectx.lineTo(ec.width,p.y);ectx.stroke();}
-  const a=editorWorldToScreen(0,0),b=editorWorldToScreen(editorLevel.map.w,editorLevel.map.h);ectx.strokeStyle='#39ff6e';ectx.lineWidth=3;ectx.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);
-  // Spawn
-  const sp=editorWorldToScreen(editorLevel.spawn.x,editorLevel.spawn.y);ectx.strokeStyle='#55ffff';ectx.lineWidth=3;ectx.beginPath();ectx.arc(sp.x,sp.y,18*z,0,Math.PI*2);ectx.stroke();ectx.fillStyle='#55ffff';ectx.font='bold 12px Arial';ectx.fillText('PLAYER SPAWN',sp.x+22*z,sp.y-8*z);
-  editorLevel.objects.forEach(o=>{
-    const p=editorWorldToScreen(o.x,o.y),w=o.w*z,h=o.h*z;ectx.save();ectx.translate(p.x,p.y);ectx.rotate((o.rotation||0)*Math.PI/180);
-    let imgPath=null,fill='rgba(255,255,255,.18)';if(o.type==='tree'){imgPath='images/tree.png';fill='rgba(70,170,80,.45)'}else if(o.type==='wall'){imgPath='images/wall.png';fill='rgba(150,150,150,.5)'}else if(o.type==='green'){imgPath='images/Green.png';fill='rgba(50,220,70,.35)'}else if(o.type==='glob'){imgPath='images/Glob.png';fill='rgba(255,210,40,.35)'}else if(o.type==='knight'){imgPath='images/knight.png';fill='rgba(230,230,255,.35)'}else if(o.type==='trigger'){fill='rgba(0,255,255,.18)'}else if(o.type==='spawn'){fill='rgba(0,255,255,.2)'}
-    ectx.fillStyle=fill;ectx.fillRect(-w/2,-h/2,w,h);if(imgPath){const im=new Image();im.src=imgPath;if(im.complete&&im.naturalWidth)ectx.drawImage(im,-w/2,-h/2,w,h);}
-    ectx.strokeStyle=o===editorSelected?'#fff':'rgba(255,255,255,.45)';ectx.lineWidth=o===editorSelected?3:1;ectx.strokeRect(-w/2,-h/2,w,h);ectx.restore();
-    if(o.type==='trigger'){ectx.fillStyle='#55ffff';ectx.font='bold 11px Arial';ectx.fillText(`TOUCH G${o.group}`,p.x-w/2+4,p.y+4);}
-    else {ectx.fillStyle='#fff';ectx.font='bold 10px Arial';ectx.fillText(o.type.toUpperCase()+` G${o.group||0}`,p.x-w/2,p.y-h/2-4);}
-  });
-  document.getElementById('editorStatus').innerHTML=`<b>${editorLevel.name}</b><br>Map: ${editorLevel.map.w} × ${editorLevel.map.h}<br>Objects: ${editorLevel.objects.length}<br>Tool: ${editorTool}<br>Left click: place/select · Wheel: zoom · Middle/right drag: pan · Delete: remove`;
-}
-
-ec.addEventListener('contextmenu',e=>e.preventDefault());
-ec.addEventListener('mousedown',e=>{const r=ec.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(e.button===1||e.button===2){editorDragging=true;editorLast={x:e.clientX,y:e.clientY};return;}if(e.button!==0)return;readEditorFields();const w=editorScreenToWorld(x,y);if(editorTool==='select'){editorSelected=editorHit(x,y);if(editorSelected){editorLevel.selectedId=editorSelected.id;updateSelectedFields();updateObjectList();}else editorSelected=null;editorRender();}else if(editorTool==='spawn'){editorLevel.spawn={x:snap(w.x),y:snap(w.y)};editorRender();}else addEditorObject(editorTool,w.x,w.y);});
-window.addEventListener('mousemove',e=>{if(!editorDragging||!editorOpen)return;const z=editorZoom();editorPan.x-=(e.clientX-editorLast.x)/z;editorPan.y-=(e.clientY-editorLast.y)/z;editorPan.x=Math.max(0,Math.min(Math.max(0,editorLevel.map.w-ec.width/z),editorPan.x));editorPan.y=Math.max(0,Math.min(Math.max(0,editorLevel.map.h-ec.height/z),editorPan.y));editorLast={x:e.clientX,y:e.clientY};editorRender();});
-window.addEventListener('mouseup',()=>editorDragging=false);
-ec.addEventListener('wheel',e=>{e.preventDefault();const z=editorZoom()*(e.deltaY<0?1.1:.909);document.getElementById('edZoom').value=Math.max(.2,Math.min(3,z)).toFixed(2);editorRender();},{passive:false});
-window.addEventListener('keydown',e=>{if(!editorOpen)return;if(e.key==='Delete'&&editorSelected){editorLevel.objects=editorLevel.objects.filter(o=>o!==editorSelected);editorSelected=null;updateSelectedFields();updateObjectList();editorRender();}if(e.key==='Escape'&&editorOpen){closeEditor();}});
-document.querySelectorAll('.edTool').forEach(b=>b.onclick=()=>{editorTool=b.dataset.tool;document.querySelectorAll('.edTool').forEach(x=>x.classList.remove('active'));b.classList.add('active');editorRender();});
-['edLevelName','edMusic','edMapW','edMapH','edGrid','edBg','edBgTile','edX','edY','edObjW','edObjH','edGroup','edRot','edAction'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{readEditorFields();editorRender();updateObjectList();}));
-document.getElementById('edDelete').onclick=()=>{if(editorSelected){editorLevel.objects=editorLevel.objects.filter(o=>o!==editorSelected);editorSelected=null;updateSelectedFields();updateObjectList();editorRender();}};
-document.getElementById('edNew').onclick=()=>{if(confirm('Create a new level? Unsaved editor changes will be lost.')){editorLevel=blankLevel();editorPan={x:0,y:0};editorSelected=null;loadEditorFields();editorRender();}};
-document.getElementById('edSave').onclick=()=>{readEditorFields();localStorage.setItem('kt_editor_draft',JSON.stringify(editorLevel));showEditorNotice('EDITOR DRAFT SAVED');};
-document.getElementById('edPublish').onclick=()=>{readEditorFields();const arr=JSON.parse(localStorage.getItem('kt_published_stage3')||'[]');const idx=arr.findIndex(x=>x.name===editorLevel.name);if(idx>=0)arr[idx]=cloneData(editorLevel);else arr.push(cloneData(editorLevel));localStorage.setItem('kt_published_stage3',JSON.stringify(arr));showEditorNotice('STAGE 3 PUBLISHED — F5 KEEPS IT');};
-document.getElementById('edExport').onclick=()=>{readEditorFields();const blob=new Blob([JSON.stringify(editorLevel,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(editorLevel.name||'stage3').replace(/[^a-z0-9_-]+/gi,'_')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);showEditorNotice('JSON EXPORTED');};
-document.getElementById('edPlay').onclick=()=>{readEditorFields();localStorage.setItem('kt_test_level',JSON.stringify(editorLevel));closeEditor();launchCustomStage3(editorLevel,true);};
-document.getElementById('edExit').onclick=()=>closeEditor();
-function showEditorNotice(t){const n=document.getElementById('levelPublishedNotice');n.textContent=t;n.classList.add('show');setTimeout(()=>n.classList.remove('show'),1800);}
-
+/* ================= ULTRAKILL-STYLE CREATOR LEVEL EDITOR ================= */
+const CREATOR_UNLOCK_KEY='kt_creator_unlocked_v1';let creatorUnlocked=localStorage.getItem(CREATOR_UNLOCK_KEY)==='1';const makeLevelsBtn=document.getElementById('makeLevelsBtn'),creatorModal=document.getElementById('creatorModal'),editor=document.getElementById('levelEditor'),ec=document.getElementById('editorCanvas'),ectx=ec.getContext('2d');let editorOpen=false,editorDragging=false,editorLast={x:0,y:0},editorSelected=null,editorTool='select',editorPan={x:0,y:0},editorLevel=null,editorTestMode=false;let editorUndoStack=[],editorRedoStack=[],editorHistoryBusy=false;const BUILTIN_STAGE3_LEVELS=window.BUILTIN_STAGE3_LEVELS||[];const publishedLevels=JSON.parse(localStorage.getItem('kt_published_stage3')||'[]');function cloneData(x){return JSON.parse(JSON.stringify(x))}function creatorPasswordOK(v){return typeof v==='string'&&v.trim()==='ultra'}function updateCreatorUI(){makeLevelsBtn.classList.toggle('show',creatorUnlocked)}updateCreatorUI();window.addEventListener('keydown',e=>{if((e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='l')&&!editorOpen){e.preventDefault();creatorModal.classList.add('show');document.getElementById('creatorPassword').focus()}});document.getElementById('creatorEnter').onclick=()=>{const p=document.getElementById('creatorPassword').value;if(creatorPasswordOK(p)){creatorUnlocked=true;localStorage.setItem(CREATOR_UNLOCK_KEY,'1');creatorModal.classList.remove('show');updateCreatorUI();openEditor()}else document.getElementById('creatorError').textContent='Wrong creator password.'};document.getElementById('creatorCancel').onclick=()=>creatorModal.classList.remove('show');makeLevelsBtn.onclick=()=>{if(creatorUnlocked)openEditor()};function editorResize(){ec.width=Math.max(300,window.innerWidth-330);ec.height=Math.max(300,window.innerHeight-58)}window.addEventListener('resize',()=>{if(editorOpen){editorResize();editorRender()}});function blankLevel(){return{version:3,name:'UNTITLED',stage:3,music:'musics/game.mp3',map:{w:6000,h:3000,grid:50,background:'images/Map.png',tile:512},spawn:{x:500,y:500},objects:[]}}function editorSnapshot(){if(!editorLevel||editorHistoryBusy)return;editorUndoStack.push(cloneData(editorLevel));if(editorUndoStack.length>60)editorUndoStack.shift();editorRedoStack=[]}function undoEditor(){if(!editorUndoStack.length)return;editorRedoStack.push(cloneData(editorLevel));editorLevel=editorUndoStack.pop();editorSelected=editorLevel.selectedId?editorLevel.objects.find(o=>o.id===editorLevel.selectedId)||null:null;loadEditorFields();editorRender();showEditorNotice('UNDO')}function redoEditor(){if(!editorRedoStack.length)return;editorUndoStack.push(cloneData(editorLevel));editorLevel=editorRedoStack.pop();editorSelected=editorLevel.selectedId?editorLevel.objects.find(o=>o.id===editorLevel.selectedId)||null:null;loadEditorFields();editorRender();showEditorNotice('REDO')}function openEditor(level){editorOpen=true;editorTestMode=false;editor.classList.add('show');editorResize();editorLevel=cloneData(level||publishedLevels[publishedLevels.length-1]||JSON.parse(localStorage.getItem('kt_editor_draft')||'null')||blankLevel());editorUndoStack=[];editorRedoStack=[];editorPan={x:0,y:0};editorSelected=null;loadEditorFields();editorRender()}function closeEditor(){editorOpen=false;editor.classList.remove('show');editorSelected=null}function loadEditorFields(){const L=editorLevel;document.getElementById('edLevelName').value=L.name||'UNTITLED';document.getElementById('edMusic').value=L.music||'';document.getElementById('edMapW').value=L.map.w;document.getElementById('edMapH').value=L.map.h;document.getElementById('edGrid').value=L.map.grid||50;document.getElementById('edBg').value=L.map.background||'';document.getElementById('edBgTile').value=L.map.tile||512;if(L.selectedId)editorSelected=L.objects.find(o=>o.id===L.selectedId)||null;updateSelectedFields();updateObjectList()}function readEditorFields(){if(!editorLevel)return;editorLevel.name=document.getElementById('edLevelName').value.trim()||'UNTITLED';editorLevel.music=document.getElementById('edMusic').value;editorLevel.map.w=Math.max(1000,+document.getElementById('edMapW').value||6000);editorLevel.map.h=Math.max(700,+document.getElementById('edMapH').value||3000);editorLevel.map.grid=Math.max(10,+document.getElementById('edGrid').value||50);editorLevel.map.background=document.getElementById('edBg').value.trim();editorLevel.map.tile=Math.max(64,+document.getElementById('edBgTile').value||512);if(editorSelected){editorSelected.x=+document.getElementById('edX').value||0;editorSelected.y=+document.getElementById('edY').value||0;editorSelected.w=Math.max(10,+document.getElementById('edObjW').value||100);editorSelected.h=Math.max(10,+document.getElementById('edObjH').value||100);editorSelected.group=Math.max(0,+document.getElementById('edGroup').value||0);editorSelected.rotation=+document.getElementById('edRot').value||0;editorSelected.action=document.getElementById('edAction').value;editorLevel.selectedId=editorSelected.id}}function updateSelectedFields(){const o=editorSelected,ids=['edX','edY','edObjW','edObjH','edGroup','edRot'];if(!o){ids.forEach(id=>document.getElementById(id).value='');document.getElementById('edAction').value='spawn';return}document.getElementById('edX').value=Math.round(o.x);document.getElementById('edY').value=Math.round(o.y);document.getElementById('edObjW').value=Math.round(o.w);document.getElementById('edObjH').value=Math.round(o.h);document.getElementById('edGroup').value=o.group||0;document.getElementById('edRot').value=o.rotation||0;document.getElementById('edAction').value=o.action||'spawn'}function editorZoom(){return Math.max(.2,Math.min(3,+document.getElementById('edZoom').value||1))}function editorWorldToScreen(x,y){return{x:(x-editorPan.x)*editorZoom(),y:(y-editorPan.y)*editorZoom()}}function editorScreenToWorld(x,y){return{x:x/editorZoom()+editorPan.x,y:y/editorZoom()+editorPan.y}}function snap(v){const g=Math.max(1,+document.getElementById('edGrid').value||50);return Math.round(v/g)*g}function editorHit(x,y){const w=editorScreenToWorld(x,y);for(let i=editorLevel.objects.length-1;i>=0;i--){const o=editorLevel.objects[i];if(Math.abs(w.x-o.x)<=o.w/2&&Math.abs(w.y-o.y)<=o.h/2)return o}return null}function newEditorObject(type,x,y){const o={id:'o'+Date.now()+Math.random().toString(36).slice(2,7),type,x:snap(x),y:snap(y),w:100,h:100,rotation:0,group:0,action:'spawn'};if(type==='tree')o.w=110,o.h=140;if(type==='wall')o.w=180,o.h=100;if(type==='green'||type==='glob')o.w=60,o.h=60;if(type==='knight')o.w=70,o.h=70;if(type==='trigger')o.w=180,o.h=180;return o}function addEditorObject(type,x,y){editorSnapshot();if(type==='spawn'){editorLevel.spawn={x:snap(x),y:snap(y)};editorSelected=null}else{const o=newEditorObject(type,x,y);editorLevel.objects.push(o);editorSelected=o;editorLevel.selectedId=o.id}updateSelectedFields();updateObjectList();editorRender()}function updateObjectList(){const box=document.getElementById('editorObjects');box.innerHTML='';editorLevel.objects.forEach((o,i)=>{const d=document.createElement('div');d.className='edObj'+(o===editorSelected?' sel':'');d.textContent=`${i+1}. ${o.type.toUpperCase()} · ${Math.round(o.x)},${Math.round(o.y)} · G${o.group||0}`;d.onclick=()=>{editorSelected=o;editorLevel.selectedId=o.id;updateSelectedFields();updateObjectList();editorRender()};box.appendChild(d)})}const editorImages={};function editorImg(path){if(!editorImages[path]){const im=new Image();im.src=path;editorImages[path]=im}return editorImages[path]}function drawEditorAsset(im,x,y,w,h,rot){if(!im||!im.complete||!im.naturalWidth)return;ectx.save();ectx.translate(x,y);ectx.rotate((rot||0)*Math.PI/180);ectx.imageSmoothingEnabled=false;ectx.drawImage(im,-w/2,-h/2,w,h);ectx.restore()}function editorRender(){if(!editorOpen||!editorLevel)return;const z=editorZoom();ectx.clearRect(0,0,ec.width,ec.height);ectx.fillStyle='#0c1014';ectx.fillRect(0,0,ec.width,ec.height);const bg=editorImg(editorLevel.map.background||'');const tile=editorLevel.map.tile||512;const sx=Math.floor(editorPan.x/tile)*tile,sy=Math.floor(editorPan.y/tile)*tile;if(bg.complete&&bg.naturalWidth){for(let y=sy;y<editorPan.y+ec.height/z+tile;y+=tile)for(let x=sx;x<editorPan.x+ec.width/z+tile;x+=tile){const p=editorWorldToScreen(x,y);ectx.globalAlpha=.7;ectx.drawImage(bg,p.x,p.y,tile*z,tile*z)}ectx.globalAlpha=1}const g=editorLevel.map.grid||50;ectx.strokeStyle='rgba(255,255,255,.075)';for(let x=Math.floor(editorPan.x/g)*g;x<editorPan.x+ec.width/z+g;x+=g){const p=editorWorldToScreen(x,0);ectx.beginPath();ectx.moveTo(p.x+.5,0);ectx.lineTo(p.x+.5,ec.height);ectx.stroke()}for(let y=Math.floor(editorPan.y/g)*g;y<editorPan.y+ec.height/z+g;y+=g){const p=editorWorldToScreen(0,y);ectx.beginPath();ectx.moveTo(0,p.y+.5);ectx.lineTo(ec.width,p.y+.5);ectx.stroke()}const a=editorWorldToScreen(0,0),b=editorWorldToScreen(editorLevel.map.w,editorLevel.map.h);ectx.strokeStyle='#39ff6e';ectx.lineWidth=3;ectx.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);const sp=editorWorldToScreen(editorLevel.spawn.x,editorLevel.spawn.y);ectx.strokeStyle='#55ffff';ectx.lineWidth=3;ectx.beginPath();ectx.arc(sp.x,sp.y,18*z,0,Math.PI*2);ectx.stroke();ectx.fillStyle='#55ffff';ectx.font='bold 11px Arial';ectx.fillText('SPAWN',sp.x+22*z,sp.y-5*z);for(const o of editorLevel.objects){const p=editorWorldToScreen(o.x,o.y),w=o.w*z,h=o.h*z;ectx.save();ectx.translate(p.x,p.y);ectx.rotate((o.rotation||0)*Math.PI/180);let path=null,fill='rgba(255,255,255,.14)';if(o.type==='tree')path='images/tree.png';else if(o.type==='wall')path='images/wall.png';else if(o.type==='green')path='images/Green.png';else if(o.type==='glob')path='images/Glob.png';else if(o.type==='knight')path='images/knight.png';if(o.type==='trigger')fill='rgba(0,255,255,.14)';ectx.fillStyle=fill;ectx.fillRect(-w/2,-h/2,w,h);if(path)drawEditorAsset(editorImg(path),0,0,w,h,0);ectx.strokeStyle=o===editorSelected?'#fff':o.type==='trigger'?'#55ffff':'rgba(255,255,255,.35)';ectx.lineWidth=o===editorSelected?3:1;ectx.strokeRect(-w/2,-h/2,w,h);ectx.restore();ectx.fillStyle=o===editorSelected?'#fff':'rgba(255,255,255,.8)';ectx.font='bold 9px Arial';ectx.fillText(o.type.toUpperCase()+` G${o.group||0}`,p.x-w/2,p.y-h/2-4)}drawEditorMinimap();document.getElementById('editorMini').textContent=`${editorLevel.name} | ${editorLevel.map.w}×${editorLevel.map.h} | ${editorLevel.objects.length} objects | ${editorTool.toUpperCase()} | ZOOM ${z.toFixed(2)}`}function drawEditorMinimap(){const m=document.getElementById('editorMapPreview'),c=m.getContext('2d'),w=m.width,h=m.height;c.clearRect(0,0,w,h);c.fillStyle='#080a0c';c.fillRect(0,0,w,h);const sx=w/editorLevel.map.w,sy=h/editorLevel.map.h;for(const o of editorLevel.objects){c.fillStyle=o.type==='wall'?'#888':o.type==='tree'?'#286b34':o.type==='green'?'#39ff6e':o.type==='glob'?'#e6c419':o.type==='knight'?'#d7e3ef':'#55ffff';c.fillRect(o.x*sx-o.w*sx/2,o.y*sy-o.h*sy/2,Math.max(1,o.w*sx),Math.max(1,o.h*sy))}c.fillStyle='#55ffff';c.beginPath();c.arc(editorLevel.spawn.x*sx,editorLevel.spawn.y*sy,4,0,Math.PI*2);c.fill()}function showEditorNotice(t){const n=document.getElementById('levelPublishedNotice');n.textContent=t;n.classList.add('show');setTimeout(()=>n.classList.remove('show'),1400)}function returnFromTestToEditor(){if(!editorTestMode)return false;editorTestMode=false;customLevelRuntime=false;if(customMusic){customMusic.pause();customMusic.currentTime=0;customMusic=null}musicGame.pause();musicGame2.pause();divineMusic.pause();document.getElementById('pauseScreen').classList.remove('show');document.getElementById('deathScreen').style.display='none';document.getElementById('stageCompleteScreen').classList.remove('show');playingReal=false;paused=false;autoPilot=false;inMenu=false;inStages=false;document.getElementById('ui').style.display='none';openEditor(editorLevel);showEditorNotice('BACK TO EDITOR');return true}
+// Capture editor shortcuts before gameplay shortcuts.
+window.addEventListener('keydown',e=>{if(editorTestMode&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();returnFromTestToEditor();return}if(!editorOpen)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeEditor();return}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undoEditor();return}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redoEditor();return}if(e.key==='Delete'&&editorSelected){e.preventDefault();editorSnapshot();editorLevel.objects=editorLevel.objects.filter(o=>o!==editorSelected);editorSelected=null;editorLevel.selectedId=null;updateSelectedFields();updateObjectList();editorRender()}} ,true);
+ec.addEventListener('contextmenu',e=>e.preventDefault());ec.addEventListener('mousedown',e=>{const r=ec.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(e.button===1||e.button===2){editorDragging=true;editorLast={x:e.clientX,y:e.clientY};return}if(e.button!==0)return;readEditorFields();const w=editorScreenToWorld(x,y);if(editorTool==='select'){const old=editorSelected;editorSelected=editorHit(x,y);editorLevel.selectedId=editorSelected?editorSelected.id:null;if(old!==editorSelected)updateObjectList();updateSelectedFields();editorRender()}else addEditorObject(editorTool,w.x,w.y)});window.addEventListener('mousemove',e=>{if(!editorDragging||!editorOpen)return;const z=editorZoom();editorPan.x-=(e.clientX-editorLast.x)/z;editorPan.y-=(e.clientY-editorLast.y)/z;editorPan.x=Math.max(0,Math.min(Math.max(0,editorLevel.map.w-ec.width/z),editorPan.x));editorPan.y=Math.max(0,Math.min(Math.max(0,editorLevel.map.h-ec.height/z),editorPan.y));editorLast={x:e.clientX,y:e.clientY};editorRender()});window.addEventListener('mouseup',()=>editorDragging=false);ec.addEventListener('wheel',e=>{e.preventDefault();const z=editorZoom()*(e.deltaY<0?1.1:.909);document.getElementById('edZoom').value=Math.max(.2,Math.min(3,z)).toFixed(2);editorRender()},{passive:false});document.querySelectorAll('.edTool').forEach(b=>b.onclick=()=>{editorTool=b.dataset.tool;document.querySelectorAll('.edTool').forEach(x=>x.classList.remove('active'));b.classList.add('active');editorRender()});['edLevelName','edMusic','edMapW','edMapH','edGrid','edBg','edBgTile'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{editorSnapshot();readEditorFields();editorRender()}));['edX','edY','edObjW','edObjH','edGroup','edRot','edAction'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{editorSnapshot();readEditorFields();editorRender();updateObjectList()}));document.getElementById('edUndo').onclick=undoEditor;document.getElementById('edRedo').onclick=redoEditor;document.getElementById('edDelete').onclick=()=>{if(!editorSelected)return;editorSnapshot();editorLevel.objects=editorLevel.objects.filter(o=>o!==editorSelected);editorSelected=null;editorLevel.selectedId=null;updateSelectedFields();updateObjectList();editorRender()};document.getElementById('edDuplicate').onclick=()=>{if(!editorSelected)return;editorSnapshot();const o=cloneData(editorSelected);o.id='o'+Date.now()+Math.random().toString(36).slice(2,7);const g=+document.getElementById('edGrid').value||50;o.x+=g;o.y+=g;editorLevel.objects.push(o);editorSelected=o;editorLevel.selectedId=o.id;updateSelectedFields();updateObjectList();editorRender()};document.getElementById('edNew').onclick=()=>{if(confirm('Create a new level? Unsaved changes will be lost.')){editorLevel=blankLevel();editorPan={x:0,y:0};editorSelected=null;editorUndoStack=[];editorRedoStack=[];loadEditorFields();editorRender()}};document.getElementById('edSave').onclick=()=>{readEditorFields();localStorage.setItem('kt_editor_draft',JSON.stringify(editorLevel));showEditorNotice('LEVEL SAVED')};document.getElementById('edPublish').onclick=()=>{readEditorFields();const arr=JSON.parse(localStorage.getItem('kt_published_stage3')||'[]');const idx=arr.findIndex(x=>x.name===editorLevel.name);if(idx>=0)arr[idx]=cloneData(editorLevel);else arr.push(cloneData(editorLevel));localStorage.setItem('kt_published_stage3',JSON.stringify(arr));injectPublishedStageCards();showEditorNotice('LEVEL PUBLISHED')};document.getElementById('edPlay').onclick=()=>{readEditorFields();editorTestMode=true;localStorage.setItem('kt_test_level',JSON.stringify(editorLevel));closeEditor();launchCustomStage3(editorLevel,true)};document.getElementById('edExit').onclick=()=>closeEditor();
 // -------- CUSTOM STAGE 3 RUNTIME --------
 let customLevel=null, customLevelRuntime=false, customTriggerState=new Set(), customMusic=null;
 function launchCustomStage3(level,test=false){
+  if(test) editorTestMode=true;
   customLevel=cloneData(level);customLevelRuntime=true;currentStage=3;inStages=false;inMenu=false;autoPilot=false;playingReal=true;paused=false;document.getElementById('ui').style.display='';document.getElementById('stageSelect').classList.remove('show');document.getElementById('bossStageSelect').classList.remove('show');
   WORLD.w=Math.max(1000,customLevel.map.w);WORLD.h=Math.max(700,customLevel.map.h);player.x=customLevel.spawn.x;player.y=customLevel.spawn.y;camera.x=0;camera.y=0;
   customTriggerState=new Set();customMusic=null;restartGame();player.x=customLevel.spawn.x;player.y=customLevel.spawn.y;customLevelRuntime=true;customLevel=cloneData(level);if(customLevel.music){customMusic=new Audio(customLevel.music);customMusic.loop=true;customMusic.volume=musicVolume;tryPlayMusic(customMusic,()=>customLevelRuntime&&playingReal&&!paused);}
@@ -3366,7 +3180,7 @@ function customWallObjects(){return customLevel?customLevel.objects.filter(o=>o.
 function customSolidHitCircle(x,y,r){for(const o of customWallObjects()){const left=o.x-o.w/2,right=o.x+o.w/2,top=o.y-o.h/2,bottom=o.y+o.h/2;const cx=clamp(x,left,right),cy=clamp(y,top,bottom);if((x-cx)**2+(y-cy)**2<r*r)return true;}return false;}
 function customSegmentBlocked(x1,y1,x2,y2,r=4){const steps=Math.ceil(dist(x1,y1,x2,y2)/Math.max(4,r));for(let i=1;i<=steps;i++){const t=i/steps;if(customSolidHitCircle(x1+(x2-x1)*t,y1+(y2-y1)*t,r))return true;}return false;}
 function updateCustomTriggers(){if(!customLevel)return;for(const t of customObjectsOf('trigger')){if(customTriggerState.has(t.id))continue;const inside=Math.abs(player.x-t.x)<=t.w/2&&Math.abs(player.y-t.y)<=t.h/2;if(!inside)continue;customTriggerState.add(t.id);const group=t.group||0;for(const o of customLevel.objects){if(o.type==='trigger'||o.type==='spawn'||(o.group||0)!==group)continue;if(t.action==='music'&&customLevel.music){if(customMusic){customMusic.pause();}customMusic=new Audio(customLevel.music);customMusic.loop=true;customMusic.volume=musicVolume;tryPlayMusic(customMusic,()=>customLevelRuntime&&playingReal&&!paused);}else if(t.action==='end'){customLevelComplete();}else spawnCustomEntity(o);}}}
-function customLevelComplete(){customLevelRuntime=false;if(customMusic){customMusic.pause();customMusic.currentTime=0;}document.getElementById('stageCompleteTitle').textContent=customLevel?.name||'STAGE COMPLETE';document.getElementById('stageCompleteStats').textContent='CUSTOM STAGE 3 COMPLETE';document.getElementById('stageCompleteScreen').classList.add('show');}
+function customLevelComplete(){if(editorTestMode){returnFromTestToEditor();return;}customLevelRuntime=false;if(customMusic){customMusic.pause();customMusic.currentTime=0;}document.getElementById('stageCompleteTitle').textContent=customLevel?.name||'STAGE COMPLETE';document.getElementById('stageCompleteStats').textContent='CUSTOM STAGE 3 COMPLETE';document.getElementById('stageCompleteScreen').classList.add('show');}
 // Collision integration: stop the player at walls/trees and prevent projectiles crossing them.
 const _origUpdatePlayer=typeof updatePlayer==='function'?updatePlayer:null;
 function resolveCustomPlayerCollision(nx,ny){if(!customLevel)return {x:nx,y:ny};let x=nx,y=ny;const r=player.radius;for(let pass=0;pass<3;pass++){for(const o of customWallObjects()){const l=o.x-o.w/2-r,rr=o.x+o.w/2+r,t=o.y-o.h/2-r,b=o.y+o.h/2+r;if(x>l&&x<rr&&y>t&&y<b){const dl=Math.abs(x-l),dr=Math.abs(rr-x),dt=Math.abs(y-t),db=Math.abs(b-y);const m=Math.min(dl,dr,dt,db);if(m===dl)x=l;else if(m===dr)x=rr;else if(m===dt)y=t;else y=b;}}}return {x:clamp(x,r,WORLD.w-r),y:clamp(y,r,WORLD.h-r)};}
