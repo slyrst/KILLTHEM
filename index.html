@@ -3278,7 +3278,14 @@ const CREATOR_UNLOCK_KEY='kt_creator_unlocked_v1';let creatorUnlocked=localStora
   // Hard isolate editor from the gameplay simulation.
   Object.keys(keys).forEach(k=>delete keys[k]); mouseDown=false; playingReal=false; paused=false; autoPilot=false;
   enemies.length=0; bullets.length=0; swordProjectiles.length=0; cubeBullets.length=0; orbs.length=0;
-  editorOpen=true;editorTestMode=false;editor.classList.add('show');editorResize();editorLevel=cloneData(level||publishedLevels[publishedLevels.length-1]||JSON.parse(localStorage.getItem('kt_editor_draft')||'null')||blankLevel());editorUndoStack=[];editorRedoStack=[];editorPan={x:0,y:0};editorSelected=null;editorSelectedObjects=[];loadEditorFields();editorRender()}function closeEditor(){
+  editorOpen=true;editorTestMode=false;
+// hide gameplay/menu layers while editor is active
+document.getElementById('mainMenu').style.display='none';
+document.getElementById('settingsScreen').style.display='none';
+document.getElementById('stageSelect').style.display='none';
+document.getElementById('bossStageSelect').style.display='none';
+document.getElementById('ui').style.display='none';
+editor.classList.add('show');editorResize();editorLevel=cloneData(level||publishedLevels[publishedLevels.length-1]||JSON.parse(localStorage.getItem('kt_editor_draft')||'null')||blankLevel());editorUndoStack=[];editorRedoStack=[];editorPan={x:0,y:0};editorSelected=null;editorSelectedObjects=[];loadEditorFields();editorRender()}function closeEditor(){
   // Leaving the creator/editor always returns to the MAIN MENU demo.
   // Never leave the game in the editor's autoPilot=false state, otherwise
   // the menu character would appear controllable after closing the editor.
@@ -3323,6 +3330,14 @@ const CREATOR_UNLOCK_KEY='kt_creator_unlocked_v1';let creatorUnlocked=localStora
   orbs.length=0;
 
   document.getElementById('ui').style.display='';
+  const mm=document.getElementById('mainMenu');
+  if(mm) mm.style.display='';
+  const ss=document.getElementById('settingsScreen');
+  if(ss) ss.style.display='';
+  const st=document.getElementById('stageSelect');
+  if(st) st.style.display='';
+  const bs=document.getElementById('bossStageSelect');
+  if(bs) bs.style.display='';
 }function isEditorEntityType(type){return type==='green'||type==='glob'||type==='knight'||type==='v2'}
 function loadEditorFields(){const L=editorLevel;document.getElementById('edLevelName').value=L.name||'UNTITLED';document.getElementById('edMusic').value=L.music||'';document.getElementById('edMapW').value=L.map.w;document.getElementById('edMapH').value=L.map.h;document.getElementById('edGrid').value=L.map.grid||50;document.getElementById('edBg').value=L.map.background||'';document.getElementById('edBgTile').value=L.map.tile||512;if(L.selectedId)editorSelected=L.objects.find(o=>o.id===L.selectedId)||null;updateSelectedFields();updateObjectList()}
 function readEditorFields(){if(!editorLevel)return;editorLevel.name=document.getElementById('edLevelName').value.trim()||'UNTITLED';editorLevel.music=document.getElementById('edMusic').value;editorLevel.map.w=Math.max(1000,+document.getElementById('edMapW').value||6000);editorLevel.map.h=Math.max(700,+document.getElementById('edMapH').value||3000);editorLevel.map.grid=Math.max(10,+document.getElementById('edGrid').value||50);editorLevel.map.background=document.getElementById('edBg').value.trim();editorLevel.map.tile=Math.max(64,+document.getElementById('edBgTile').value||512);if(editorSelected){editorSelected.x=+document.getElementById('edX').value||0;editorSelected.y=+document.getElementById('edY').value||0;editorSelected.w=Math.max(10,+document.getElementById('edObjW').value||100);editorSelected.h=Math.max(10,+document.getElementById('edObjH').value||100);editorSelected.group=Math.max(0,+document.getElementById('edGroup').value||0);editorSelected.rotation=+document.getElementById('edRot').value||0;editorSelected.action=document.getElementById('edAction').value;if(isEditorEntityType(editorSelected.type)){editorSelected.entityHp=Math.max(1,+document.getElementById('edEntityHp').value||60);editorSelected.entitySpeed=Math.max(0,+document.getElementById('edEntitySpeed').value||0);editorSelected.entityDamage=Math.max(0,+document.getElementById('edEntityDamage').value||0);editorSelected.entityScale=Math.max(.1,Math.min(5,+document.getElementById('edEntityScale').value||1));editorSelected.moreEffect=!!document.getElementById('edMoreEffect').checked}else{delete editorSelected.entityHp;delete editorSelected.entitySpeed;delete editorSelected.entityDamage;delete editorSelected.entityScale;delete editorSelected.moreEffect}editorLevel.selectedId=editorSelected.id}}
@@ -3346,7 +3361,14 @@ window.addEventListener('keydown',e=>{
   if(['w','a','s','d'].includes(e.key.toLowerCase())&&editorSelectedObjects.length&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();const k=e.key.toLowerCase();moveEditorSelection(k==='a'?-1:k==='d'?1:0,k==='w'?-1:k==='s'?1:0);return}
   if(e.key==='Delete'&&editorSelectedObjects.length){e.preventDefault();editorSnapshot();const set=new Set(editorSelectedObjects);editorLevel.objects=editorLevel.objects.filter(o=>!set.has(o));editorSelected=null;editorSelectedObjects=[];editorLevel.selectedId=null;updateSelectedFields();updateObjectList();editorRender()}
 } ,true);
-ec.addEventListener('contextmenu',e=>e.preventDefault());ec.addEventListener('mousedown',e=>{const r=ec.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(e.button===1||e.button===2){editorDragging=true;editorLast={x:e.clientX,y:e.clientY};return}if(e.button!==0)return;readEditorFields();const w=editorScreenToWorld(x,y);if(editorTool==='select'){const hit=editorHit(x,y);if(e.shiftKey){if(hit){if(editorSelectedObjects.includes(hit))editorSelectedObjects=editorSelectedObjects.filter(o=>o!==hit);else editorSelectedObjects.push(hit)}}else{editorSelectedObjects=hit?[hit]:[]}editorSelected=editorSelectedObjects[0]||null;editorLevel.selectedId=editorSelected?editorSelected.id:null;updateObjectList();updateSelectedFields();editorRender()}else addEditorObject(editorTool,w.x,w.y)});window.addEventListener('mousemove',e=>{if(!editorDragging||!editorOpen)return;const z=editorZoom();editorPan.x-=(e.clientX-editorLast.x)/z;editorPan.y-=(e.clientY-editorLast.y)/z;editorPan.x=Math.max(0,Math.min(Math.max(0,editorLevel.map.w-ec.width/z),editorPan.x));editorPan.y=Math.max(0,Math.min(Math.max(0,editorLevel.map.h-ec.height/z),editorPan.y));editorLast={x:e.clientX,y:e.clientY};editorRender()});window.addEventListener('mouseup',()=>editorDragging=false);ec.addEventListener('wheel',e=>{e.preventDefault();const z=editorZoom()*(e.deltaY<0?1.1:.909);document.getElementById('edZoom').value=Math.max(.2,Math.min(3,z)).toFixed(2);editorRender()},{passive:false});document.querySelectorAll('.edTool').forEach(b=>b.onclick=()=>{editorTool=b.dataset.tool;document.querySelectorAll('.edTool').forEach(x=>x.classList.remove('active'));b.classList.add('active');editorRender()});['edLevelName','edMusic','edMapW','edMapH','edGrid','edBg','edBgTile'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{editorSnapshot();readEditorFields();editorRender()}));['edX','edY','edObjW','edObjH','edGroup','edRot','edAction','edEntityHp','edEntitySpeed','edEntityDamage','edEntityScale','edMoreEffect'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(!editorSelected&&id!=='edMoreEffect')return;editorSnapshot();readEditorFields();editorRender();updateObjectList()}));document.getElementById('edUndo').onclick=undoEditor;document.getElementById('edRedo').onclick=redoEditor;document.getElementById('edDelete').onclick=()=>{if(!editorSelected)return;editorSnapshot();editorLevel.objects=editorLevel.objects.filter(o=>o!==editorSelected);editorSelected=null;editorLevel.selectedId=null;updateSelectedFields();updateObjectList();editorRender()};document.getElementById('edDuplicate').onclick=()=>{if(!editorSelected)return;editorSnapshot();const o=cloneData(editorSelected);o.id='o'+Date.now()+Math.random().toString(36).slice(2,7);const g=+document.getElementById('edGrid').value||50;o.x+=g;o.y+=g;editorLevel.objects.push(o);editorSelected=o;editorLevel.selectedId=o.id;updateSelectedFields();updateObjectList();editorRender()};document.getElementById('edNew').onclick=()=>{if(confirm('Create a new level? Unsaved changes will be lost.')){editorLevel=blankLevel();editorPan={x:0,y:0};editorSelected=null;editorUndoStack=[];editorRedoStack=[];loadEditorFields();editorRender()}};document.getElementById('edSave').onclick=()=>{readEditorFields();localStorage.setItem('kt_editor_draft',JSON.stringify(editorLevel));showEditorNotice('LEVEL SAVED')};document.getElementById('edPublish').onclick=()=>{readEditorFields();const arr=JSON.parse(localStorage.getItem('kt_published_stage3')||'[]');const idx=arr.findIndex(x=>x.name===editorLevel.name);if(idx>=0)arr[idx]=cloneData(editorLevel);else arr.push(cloneData(editorLevel));localStorage.setItem('kt_published_stage3',JSON.stringify(arr));injectPublishedStageCards();showEditorNotice('LEVEL PUBLISHED')};document.getElementById('edPlay').onclick=()=>{readEditorFields();editorTestMode=true;localStorage.setItem('kt_test_level',JSON.stringify(editorLevel));closeEditor();launchCustomStage3(editorLevel,true)};document.getElementById('edExit').onclick=()=>closeEditor();
+ec.addEventListener('contextmenu',e=>e.preventDefault());ec.addEventListener('mousedown',e=>{const r=ec.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(e.button===1||e.button===2){editorDragging=true;editorLast={x:e.clientX,y:e.clientY};return}if(e.button!==0)return;readEditorFields();const w=editorScreenToWorld(x,y);if(editorTool==='select'){const hit=editorHit(x,y);if(e.shiftKey){if(hit){if(editorSelectedObjects.includes(hit))editorSelectedObjects=editorSelectedObjects.filter(o=>o!==hit);else editorSelectedObjects.push(hit)}}else{editorSelectedObjects=hit?[hit]:[]}editorSelected=editorSelectedObjects[0]||null;editorLevel.selectedId=editorSelected?editorSelected.id:null;updateObjectList();updateSelectedFields();editorRender()}else addEditorObject(editorTool,w.x,w.y)});window.addEventListener('mousemove',e=>{if(!editorDragging||!editorOpen)return;const z=editorZoom();editorPan.x-=(e.clientX-editorLast.x)/z;editorPan.y-=(e.clientY-editorLast.y)/z;editorPan.x=Math.max(0,Math.min(Math.max(0,editorLevel.map.w-ec.width/z),editorPan.x));editorPan.y=Math.max(0,Math.min(Math.max(0,editorLevel.map.h-ec.height/z),editorPan.y));editorLast={x:e.clientX,y:e.clientY};editorRender()});window.addEventListener('mouseup',()=>editorDragging=false);ec.addEventListener('wheel',e=>{e.preventDefault();const z=editorZoom()*(e.deltaY<0?1.1:.909);document.getElementById('edZoom').value=Math.max(.2,Math.min(3,z)).toFixed(2);editorRender()},{passive:false});document.querySelectorAll('.edTool').forEach(b=>b.onclick=()=>{editorTool=b.dataset.tool;document.querySelectorAll('.edTool').forEach(x=>x.classList.remove('active'));b.classList.add('active');editorRender()});['edLevelName','edMusic','edMapW','edMapH','edGrid','edBg','edBgTile'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{editorSnapshot();readEditorFields();editorRender()}));['edX','edY','edObjW','edObjH','edGroup','edRot','edAction','edEntityHp','edEntitySpeed','edEntityDamage','edEntityScale','edMoreEffect'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(!editorSelected&&id!=='edMoreEffect')return;editorSnapshot();readEditorFields();editorRender();updateObjectList()}));document.getElementById('edUndo').onclick=undoEditor;document.getElementById('edRedo').onclick=redoEditor;document.getElementById('edDelete').onclick=()=>{if(!editorSelected)return;editorSnapshot();editorLevel.objects=editorLevel.objects.filter(o=>o!==editorSelected);editorSelected=null;editorLevel.selectedId=null;updateSelectedFields();updateObjectList();editorRender()};document.getElementById('edDuplicate').onclick=()=>{if(!editorSelected)return;editorSnapshot();const o=cloneData(editorSelected);o.id='o'+Date.now()+Math.random().toString(36).slice(2,7);const g=+document.getElementById('edGrid').value||50;o.x+=g;o.y+=g;editorLevel.objects.push(o);editorSelected=o;editorLevel.selectedId=o.id;updateSelectedFields();updateObjectList();editorRender()};document.getElementById('edNew').onclick=()=>{if(confirm('Create a new level? Unsaved changes will be lost.')){editorLevel=blankLevel();editorPan={x:0,y:0};editorSelected=null;editorUndoStack=[];editorRedoStack=[];loadEditorFields();editorRender()}};document.getElementById('edSave').onclick=()=>{readEditorFields();localStorage.setItem('kt_editor_draft',JSON.stringify(editorLevel));showEditorNotice('LEVEL SAVED')};document.getElementById('edPublish').onclick=()=>{readEditorFields();const arr=JSON.parse(localStorage.getItem('kt_published_stage3')||'[]');const idx=arr.findIndex(x=>x.name===editorLevel.name);if(idx>=0)arr[idx]=cloneData(editorLevel);else arr.push(cloneData(editorLevel));localStorage.setItem('kt_published_stage3',JSON.stringify(arr));injectPublishedStageCards();showEditorNotice('LEVEL PUBLISHED')};document.getElementById('edPlay').onclick=()=>{
+ readEditorFields();
+ editorTestMode=true;
+ localStorage.setItem('kt_test_level',JSON.stringify(editorLevel));
+ editorOpen=false;
+ editor.classList.remove('show');
+ launchCustomStage3(editorLevel,true);
+};document.getElementById('edExit').onclick=()=>closeEditor();
 // -------- CUSTOM STAGE 3 RUNTIME --------
 let customLevel=null, customLevelRuntime=false, customTriggerState=new Set(), customMusic=null;
 let customSpawnEffects=[];
@@ -3464,265 +3486,6 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 
-</script>
-
-<script id="directEditorFix">
-/* DIRECT EDITOR FIX */
-
-(function(){
-
-// Image object creator
-window.addImageObject = function(path){
-    if(!path) return;
-    const obj = {
-        type:"image",
-        image:path,
-        x:WORLD.w/2,
-        y:WORLD.h/2,
-        width:300,
-        height:300,
-        scaleX:1,
-        scaleY:1,
-        rotation:0,
-        collision:false
-    };
-    if(window.editorObjects) editorObjects.push(obj);
-    if(window.renderEditor) renderEditor();
-};
-
-
-// slim wall default
-window.createSlimWall = function(){
-    return {
-        type:"wall",
-        width:400,
-        height:14,
-        collision:true,
-        rotation:0
-    };
-};
-
-
-// playtest hard lock
-window.enterEditorPlayTest=function(){
-    window.editorTestMode=true;
-    window.inMenu=false;
-    window.playingReal=true;
-    window.autoPilot=false;
-
-    ["mainMenu","settingsScreen","stageSelect","bossStageSelect"].forEach(id=>{
-        const e=document.getElementById(id);
-        if(e) e.style.display="none";
-    });
-};
-
-window.exitEditorPlayTest=function(){
-    window.editorTestMode=false;
-    window.playingReal=false;
-    window.inMenu=true;
-    window.autoPilot=true;
-
-    const m=document.getElementById("mainMenu");
-    if(m)m.style.display="block";
-
-    if(typeof restartGame==="function") restartGame();
-
-    window.spawnTimer=0.05;
-};
-
-
-// scale handles
-window.drawScaleHandles=function(ctx,obj){
-    const s=8;
-    const pts=[
-        [obj.x,obj.y],
-        [obj.x+obj.width/2,obj.y],
-        [obj.x+obj.width/2,obj.y+obj.height/2],
-        [obj.x,obj.y+obj.height/2]
-    ];
-
-    ctx.fillStyle="#39ff6e";
-    pts.forEach(p=>{
-        ctx.beginPath();
-        ctx.arc(p[0],p[1],s,0,Math.PI*2);
-        ctx.fill();
-    });
-};
-
-})();
-</script>
-
-<script id="menuEditorHideFix">
-(function(){
-
-function hideMenusForEditor(){
-    const ids=[
-        "mainMenu",
-        "playBtn",
-        "settingsBtn",
-        "diffCorner",
-        "stageSelect",
-        "bossStageSelect",
-        "makeLevelsBtn"
-    ];
-
-    ids.forEach(id=>{
-        const el=document.getElementById(id);
-        if(el){
-            el.style.display="none";
-            el.style.pointerEvents="none";
-            el.style.visibility="hidden";
-        }
-    });
-
-    const editor=document.getElementById("levelEditor");
-    if(editor){
-        editor.style.display="block";
-        editor.classList.add("show");
-        editor.style.zIndex="9999";
-    }
-}
-
-function restoreMenus(){
-    const menu=document.getElementById("mainMenu");
-    if(menu){
-        menu.style.display="";
-        menu.style.visibility="";
-        menu.style.pointerEvents="";
-    }
-}
-
-// watch editor opening
-const obs=new MutationObserver(()=>{
-    const editor=document.getElementById("levelEditor");
-    if(editor && (editor.classList.contains("show") || editor.style.display==="block")){
-        hideMenusForEditor();
-    }
-});
-
-obs.observe(document.body,{attributes:true,childList:true,subtree:true});
-
-// override common editor open functions
-window.addEventListener("load",()=>{
-    hideMenusForEditor();
-});
-
-window.hideMenusForEditor=hideMenusForEditor;
-window.restoreMenus=restoreMenus;
-
-})();
-</script>
-
-<script id="realPlayStateFix">
-(function(){
-
-function forceEditorState(){
-    window.editorTestMode = false;
-    window.playingReal = false;
-    window.inMenu = false;
-    window.autoPilot = false;
-
-    const hide = [
-        "mainMenu",
-        "settingsScreen",
-        "stageSelect",
-        "bossStageSelect",
-        "playBtn",
-        "settingsBtn",
-        "diffCorner"
-    ];
-
-    hide.forEach(id=>{
-        const e=document.getElementById(id);
-        if(e){
-            e.style.display="none";
-            e.style.visibility="hidden";
-            e.style.pointerEvents="none";
-        }
-    });
-}
-
-function forceMenuState(){
-    window.editorTestMode = false;
-    window.playingReal = false;
-    window.inMenu = true;
-    window.autoPilot = true;
-
-    const m=document.getElementById("mainMenu");
-    if(m){
-        m.style.display="block";
-        m.style.visibility="visible";
-        m.style.pointerEvents="auto";
-    }
-}
-
-/* Editor açıldığında gerçek oyun state'ini kilitle */
-document.addEventListener("click",e=>{
-    const target=e.target;
-    if(target && (
-        target.id==="makeLevelsBtn" ||
-        target.closest("#makeLevelsBtn") ||
-        target.id==="edPlay"
-    )){
-        setTimeout(forceEditorState,50);
-    }
-});
-
-/* Main menuye dönünce player kontrolünü geri verme */
-window.realBackToMenuFix=forceMenuState;
-window.realEditorFix=forceEditorState;
-
-})();
-</script>
-
-<script id="makeLevelsCrashFix">
-(function(){
-
-// Make Levels crash protection
-window.addEventListener("error",function(e){
-    if(String(e.message).includes("editor") || String(e.message).includes("stopEverything")){
-        console.warn("Editor error recovered:",e.message);
-    }
-});
-
-const oldOpen=window.openEditor;
-
-window.openEditor=function(level){
-    try{
-        if(typeof stopEverythingForEditor==="function"){
-            stopEverythingForEditor();
-        }
-
-        window.gameStarted=false;
-        window.playingReal=false;
-        window.autoPilot=false;
-        window.inMenu=false;
-
-        const editor=document.getElementById("levelEditor");
-        if(!editor){
-            console.error("levelEditor missing");
-            return;
-        }
-
-        editor.classList.add("show");
-        editor.style.display="block";
-
-        if(typeof oldOpen==="function"){
-            return oldOpen(level);
-        }
-
-    }catch(err){
-        console.error("MAKE LEVELS FIX:",err);
-
-        const editor=document.getElementById("levelEditor");
-        if(editor){
-            editor.classList.add("show");
-            editor.style.display="block";
-        }
-    }
-};
-
-})();
 </script>
 </body>
 </html>
