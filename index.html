@@ -279,27 +279,6 @@
 #creatorError{color:#ff5555;min-height:18px;font-size:12px}
 #levelPublishedNotice{position:fixed;left:50%;top:76px;transform:translateX(-50%);z-index:220;background:#0b1d11;border:1px solid #39ff6e;color:#39ff6e;padding:7px 13px;display:none;font-weight:bold;font-size:12px}
 #levelPublishedNotice.show{display:block}
-
-/* ===== STAGE 3 EDITOR POLISH ===== */
-#levelEditor{background:#07090b}
-#editorTop{height:64px;background:linear-gradient(180deg,#151a1f,#0d1115);border-bottom:1px solid #2d343a;box-shadow:0 8px 24px rgba(0,0,0,.35);gap:8px;padding:0 12px}
-#editorTop .edTitle{color:#ff3b3b;text-shadow:0 0 14px rgba(255,50,50,.35);letter-spacing:3px}
-#editorTop input,#editorTop select,#editorSide input,#editorSide select{background:#080b0e;border:1px solid #343b42;border-radius:3px;outline:none}
-#editorTop input:focus,#editorTop select:focus,#editorSide input:focus,#editorSide select:focus{border-color:#ff4040;box-shadow:0 0 0 2px rgba(255,64,64,.10)}
-.edBtn{background:#11161b;border:1px solid #3a4249;border-radius:3px;letter-spacing:.5px;transition:.12s}
-.edBtn:hover{border-color:#ff4141;color:#fff;background:#1a2026;box-shadow:0 0 12px rgba(255,50,50,.12)}
-.edBtn.active{background:#321417;border-color:#ff4141;color:#ff6b6b;box-shadow:inset 0 0 18px rgba(255,40,40,.08)}
-#editorCanvas{top:64px;right:340px;background:#090d10}
-#editorSide{top:64px;width:340px;background:linear-gradient(180deg,#11161a,#0b0f12);border-left:1px solid #2b3238;padding:16px}
-#editorSide h3{color:#ff5454;border-bottom:1px solid #2b3035;padding-bottom:7px;margin-top:15px;text-shadow:0 0 10px rgba(255,60,60,.18)}
-.edRow{gap:10px}.edRow label{color:#7f8a94;font-weight:800}
-.edToolGrid{grid-template-columns:1fr 1fr;gap:8px}.edTool{min-height:44px}
-#editorObjects{max-height:220px;border-color:#2b3238;background:#080b0e;border-radius:3px}
-.edObj{border-bottom-color:#1f252a;padding:8px 9px}.edObj:hover{background:#171d22}.edObj.sel{background:#321519;color:#ff7373;border-left:3px solid #ff4141}
-#editorStatus{color:#89949e;border-top-color:#2b3238;background:#090c0f;padding:10px;border-radius:3px}
-#levelPublishedNotice{background:#210d10;border-color:#ff4141;color:#ff7777}
-#makeLevelsBtn{border-color:#ff4141;color:#ff7777}
-
 </style>
 </head>
 <body>
@@ -740,7 +719,6 @@ window.addEventListener('wheel', e => {
 // Only the real, player-controlled run can be paused with ESC - not the
 // main menu demo, not the stages intro screen.
 function togglePause(){
-  if(customEditorTest){returnFromCustomTestToEditor();return;}
   if(!playingReal || !player.alive) return;
   if(cubeDialogueActive) return; // Diyalog sırasında pause yapma
   if(paused){
@@ -776,7 +754,6 @@ document.getElementById('stayBtn').addEventListener('click', () => {
 });
 
 function backToMainMenu(){
-  customEditorTest=false;customLevelRuntime=false;makeLevelsBtn.classList.remove('show');
   cubeDialogueActive=false;
   cubeDialogueDone=false;
   document.getElementById('cubeDialogue').classList.remove('show','silence');
@@ -3255,9 +3232,8 @@ const creatorModal=document.getElementById('creatorModal');
 const editor=document.getElementById('levelEditor');
 const ec=document.getElementById('editorCanvas');
 const ectx=ec.getContext('2d');
-let editorOpen=false, editorDragging=false, editorMoveDragging=false, editorLast={x:0,y:0}, editorSelected=null;
+let editorOpen=false, editorDragging=false, editorLast={x:0,y:0}, editorSelected=null;
 let editorTool='select', editorPan={x:0,y:0}, editorLevel=null;
-let customEditorTest=false, editorTestSnapshot=null, editorDragOffset={x:0,y:0};
 const BUILTIN_STAGE3_LEVELS = window.BUILTIN_STAGE3_LEVELS || [];
 const publishedLevels=JSON.parse(localStorage.getItem('kt_published_stage3')||'[]');
 
@@ -3268,7 +3244,7 @@ function simpleCreatorHash(v){
 // Default creator password is intentionally simple to replace. The editor is
 // hidden from normal players; this is not server-side security.
 function creatorPasswordOK(v){return typeof v==='string' && v.trim()==='ultra';}
-function updateCreatorUI(){const visible=creatorUnlocked && !playingReal && !customLevelRuntime && !editorOpen && document.getElementById('stageSelect').classList.contains('show');makeLevelsBtn.classList.toggle('show',visible)}
+function updateCreatorUI(){makeLevelsBtn.classList.toggle('show',creatorUnlocked)}
 updateCreatorUI();
 window.addEventListener('keydown',e=>{
   if((e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='l') && !editorOpen){e.preventDefault();creatorModal.classList.add('show');document.getElementById('creatorPassword').focus();}
@@ -3280,16 +3256,16 @@ document.getElementById('creatorEnter').onclick=()=>{
 };
 document.getElementById('creatorCancel').onclick=()=>creatorModal.classList.remove('show');
 makeLevelsBtn.onclick=()=>{if(creatorUnlocked)openEditor();};
-function editorResize(){ec.width=Math.max(300,window.innerWidth-340);ec.height=Math.max(300,window.innerHeight-64);}
+function editorResize(){ec.width=Math.max(300,window.innerWidth-310);ec.height=Math.max(300,window.innerHeight-54);}
 window.addEventListener('resize',()=>{if(editorOpen){editorResize();editorRender();}});
 function blankLevel(){return {version:2,name:'UNTITLED',stage:3,music:'musics/game.mp3',map:{w:6000,h:3000,grid:50,background:'images/Map.png',tile:512},spawn:{x:300,y:300},objects:[]};}
 function cloneData(x){return JSON.parse(JSON.stringify(x));}
 function openEditor(level){
-  editorOpen=true; makeLevelsBtn.classList.remove('show'); document.getElementById('mainMenu').classList.add('hidden'); editor.classList.add('show'); editorResize();
+  editorOpen=true; editor.classList.add('show'); editorResize();
   editorLevel=cloneData(level||publishedLevels[publishedLevels.length-1]||blankLevel());
   loadEditorFields(); editorRender();
 }
-function closeEditor(){editorOpen=false;editor.classList.remove('show');editorSelected=null;document.getElementById('mainMenu').classList.remove('hidden');updateCreatorUI();}
+function closeEditor(){editorOpen=false;editor.classList.remove('show');editorSelected=null;}
 function loadEditorFields(){
   const L=editorLevel; document.getElementById('edLevelName').value=L.name; document.getElementById('edMusic').value=L.music||'';
   document.getElementById('edMapW').value=L.map.w;document.getElementById('edMapH').value=L.map.h;document.getElementById('edGrid').value=L.map.grid||50;document.getElementById('edBg').value=L.map.background||'';document.getElementById('edBgTile').value=L.map.tile||512;
@@ -3298,7 +3274,7 @@ function loadEditorFields(){
 function readEditorFields(){
   editorLevel.name=document.getElementById('edLevelName').value.trim()||'UNTITLED';editorLevel.music=document.getElementById('edMusic').value;
   editorLevel.map.w=Math.max(1000,+document.getElementById('edMapW').value||6000);editorLevel.map.h=Math.max(700,+document.getElementById('edMapH').value||3000);editorLevel.map.grid=Math.max(10,+document.getElementById('edGrid').value||50);editorLevel.map.background=document.getElementById('edBg').value.trim();editorLevel.map.tile=Math.max(64,+document.getElementById('edBgTile').value||512);
-  if(editorSelected){editorSelected.x=+document.getElementById('edX').value||0;editorSelected.y=+document.getElementById('edY').value||0;editorSelected.w=Math.max(10,+document.getElementById('edObjW').value||100);editorSelected.h=Math.max(10,+document.getElementById('edObjH').value||100);editorSelected.group=Math.max(0,+document.getElementById('edGroup').value||0);editorSelected.rotation=+document.getElementById('edRot').value||0;editorSelected.action=document.getElementById('edAction').value;if(editorSelected.type==='wall'){editorSelected.x=snap(editorSelected.x);editorSelected.y=snap(editorSelected.y);editorSelected.w=Math.max(editorLevel.map.grid,snap(editorSelected.w));editorSelected.h=Math.max(editorLevel.map.grid,snap(editorSelected.h));}}
+  if(editorSelected){editorSelected.x=+document.getElementById('edX').value||0;editorSelected.y=+document.getElementById('edY').value||0;editorSelected.w=Math.max(10,+document.getElementById('edObjW').value||100);editorSelected.h=Math.max(10,+document.getElementById('edObjH').value||100);editorSelected.group=Math.max(0,+document.getElementById('edGroup').value||0);editorSelected.rotation=+document.getElementById('edRot').value||0;editorSelected.action=document.getElementById('edAction').value;}
 }
 function updateSelectedFields(){
   const o=editorSelected; const ids=['edX','edY','edObjW','edObjH','edGroup','edRot'];
@@ -3318,7 +3294,7 @@ function newEditorObject(type,x,y){
   const base={id:'o'+Date.now()+Math.random().toString(36).slice(2,6),type,x:snap(x),y:snap(y),w:100,h:100,rotation:0,group:1,action:'spawn'};
   if(type==='spawn'){base.w=50;base.h=50;editorLevel.spawn={x:base.x,y:base.y};return base;}
   if(type==='tree'){base.w=110;base.h=140;}
-  if(type==='wall'){const g=Math.max(10,+document.getElementById('edGrid').value||50);base.w=g*4;base.h=g;}
+  if(type==='wall'){base.w=180;base.h=100;}
   if(type==='green'||type==='glob'){base.w=60;base.h=60;}
   if(type==='knight'){base.w=70;base.h=70;}
   if(type==='trigger'){base.w=180;base.h=180;}
@@ -3337,11 +3313,11 @@ function editorRender(){
   const bg=new Image();bg.src=editorLevel.map.background||'';
   const tile=editorLevel.map.tile||512; const startX=Math.floor(editorPan.x/tile)*tile;const startY=Math.floor(editorPan.y/tile)*tile;
   if(bg.complete&&bg.naturalWidth){for(let y=startY;y<editorPan.y+ec.height/z+tile;y+=tile)for(let x=startX;x<editorPan.x+ec.width/z+tile;x+=tile){const p=editorWorldToScreen(x,y);ectx.globalAlpha=.62;ectx.drawImage(bg,p.x,p.y,tile*z,tile*z);}ectx.globalAlpha=1;}
-  // Grid and world boundary: light minor grid + stronger room grid every 5 cells.
-  const g=editorLevel.map.grid||50;
-  for(let x=Math.floor(editorPan.x/g)*g;x<editorPan.x+ec.width/z+g;x+=g){const p=editorWorldToScreen(x,0);const major=Math.round(x/g)%5===0;ectx.strokeStyle=major?'rgba(255,72,72,.18)':'rgba(255,255,255,.065)';ectx.lineWidth=major?1.4:1;ectx.beginPath();ectx.moveTo(p.x,0);ectx.lineTo(p.x,ec.height);ectx.stroke();}
-  for(let y=Math.floor(editorPan.y/g)*g;y<editorPan.y+ec.height/z+g;y+=g){const p=editorWorldToScreen(0,y);const major=Math.round(y/g)%5===0;ectx.strokeStyle=major?'rgba(255,72,72,.18)':'rgba(255,255,255,.065)';ectx.lineWidth=major?1.4:1;ectx.beginPath();ectx.moveTo(0,p.y);ectx.lineTo(ec.width,p.y);ectx.stroke();}
-  const a=editorWorldToScreen(0,0),b=editorWorldToScreen(editorLevel.map.w,editorLevel.map.h);ectx.fillStyle='rgba(0,0,0,.10)';ectx.fillRect(a.x,a.y,b.x-a.x,b.y-a.y);ectx.strokeStyle='#ff4141';ectx.lineWidth=3;ectx.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);
+  // Grid and world boundary
+  const g=editorLevel.map.grid||50;ectx.strokeStyle='rgba(255,255,255,.10)';ectx.lineWidth=1;
+  for(let x=Math.floor(editorPan.x/g)*g;x<editorPan.x+ec.width/z+g;x+=g){const p=editorWorldToScreen(x,0);ectx.beginPath();ectx.moveTo(p.x,0);ectx.lineTo(p.x,ec.height);ectx.stroke();}
+  for(let y=Math.floor(editorPan.y/g)*g;y<editorPan.y+ec.height/z+g;y+=g){const p=editorWorldToScreen(0,y);ectx.beginPath();ectx.moveTo(0,p.y);ectx.lineTo(ec.width,p.y);ectx.stroke();}
+  const a=editorWorldToScreen(0,0),b=editorWorldToScreen(editorLevel.map.w,editorLevel.map.h);ectx.strokeStyle='#39ff6e';ectx.lineWidth=3;ectx.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);
   // Spawn
   const sp=editorWorldToScreen(editorLevel.spawn.x,editorLevel.spawn.y);ectx.strokeStyle='#55ffff';ectx.lineWidth=3;ectx.beginPath();ectx.arc(sp.x,sp.y,18*z,0,Math.PI*2);ectx.stroke();ectx.fillStyle='#55ffff';ectx.font='bold 12px Arial';ectx.fillText('PLAYER SPAWN',sp.x+22*z,sp.y-8*z);
   editorLevel.objects.forEach(o=>{
@@ -3352,13 +3328,13 @@ function editorRender(){
     if(o.type==='trigger'){ectx.fillStyle='#55ffff';ectx.font='bold 11px Arial';ectx.fillText(`TOUCH G${o.group}`,p.x-w/2+4,p.y+4);}
     else {ectx.fillStyle='#fff';ectx.font='bold 10px Arial';ectx.fillText(o.type.toUpperCase()+` G${o.group||0}`,p.x-w/2,p.y-h/2-4);}
   });
-  document.getElementById('editorStatus').innerHTML=`<b>${editorLevel.name}</b><br>Map: ${editorLevel.map.w} × ${editorLevel.map.h}<br>Objects: ${editorLevel.objects.length}<br>Tool: ${editorTool}<br>Select + drag: move · Left click: place · Wheel: zoom · Middle/right drag: pan · Delete: remove · PLAY TEST then ESC: editor`;
+  document.getElementById('editorStatus').innerHTML=`<b>${editorLevel.name}</b><br>Map: ${editorLevel.map.w} × ${editorLevel.map.h}<br>Objects: ${editorLevel.objects.length}<br>Tool: ${editorTool}<br>Left click: place/select · Wheel: zoom · Middle/right drag: pan · Delete: remove`;
 }
 
 ec.addEventListener('contextmenu',e=>e.preventDefault());
-ec.addEventListener('mousedown',e=>{const r=ec.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(e.button===1||e.button===2){editorDragging=true;editorLast={x:e.clientX,y:e.clientY};return;}if(e.button!==0)return;readEditorFields();const w=editorScreenToWorld(x,y);if(editorTool==='select'){editorSelected=editorHit(x,y);if(editorSelected){editorLevel.selectedId=editorSelected.id;editorMoveDragging=true;editorDragOffset={x:w.x-editorSelected.x,y:w.y-editorSelected.y};updateSelectedFields();updateObjectList();}else editorSelected=null;editorRender();}else if(editorTool==='spawn'){editorLevel.spawn={x:snap(w.x),y:snap(w.y)};editorRender();}else addEditorObject(editorTool,w.x,w.y);});
-window.addEventListener('mousemove',e=>{if(!editorOpen)return;if(editorDragging){const z=editorZoom();editorPan.x-=(e.clientX-editorLast.x)/z;editorPan.y-=(e.clientY-editorLast.y)/z;editorPan.x=Math.max(0,Math.min(Math.max(0,editorLevel.map.w-ec.width/z),editorPan.x));editorPan.y=Math.max(0,Math.min(Math.max(0,editorLevel.map.h-ec.height/z),editorPan.y));editorLast={x:e.clientX,y:e.clientY};editorRender();return;}if(editorMoveDragging&&editorSelected){const r=ec.getBoundingClientRect(),w=editorScreenToWorld(e.clientX-r.left,e.clientY-r.top);editorSelected.x=snap(w.x-editorDragOffset.x);editorSelected.y=snap(w.y-editorDragOffset.y);updateSelectedFields();editorRender();}});
-window.addEventListener('mouseup',()=>{if(editorMoveDragging)updateObjectList();editorDragging=false;editorMoveDragging=false;});
+ec.addEventListener('mousedown',e=>{const r=ec.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(e.button===1||e.button===2){editorDragging=true;editorLast={x:e.clientX,y:e.clientY};return;}if(e.button!==0)return;readEditorFields();const w=editorScreenToWorld(x,y);if(editorTool==='select'){editorSelected=editorHit(x,y);if(editorSelected){editorLevel.selectedId=editorSelected.id;updateSelectedFields();updateObjectList();}else editorSelected=null;editorRender();}else if(editorTool==='spawn'){editorLevel.spawn={x:snap(w.x),y:snap(w.y)};editorRender();}else addEditorObject(editorTool,w.x,w.y);});
+window.addEventListener('mousemove',e=>{if(!editorDragging||!editorOpen)return;const z=editorZoom();editorPan.x-=(e.clientX-editorLast.x)/z;editorPan.y-=(e.clientY-editorLast.y)/z;editorPan.x=Math.max(0,Math.min(Math.max(0,editorLevel.map.w-ec.width/z),editorPan.x));editorPan.y=Math.max(0,Math.min(Math.max(0,editorLevel.map.h-ec.height/z),editorPan.y));editorLast={x:e.clientX,y:e.clientY};editorRender();});
+window.addEventListener('mouseup',()=>editorDragging=false);
 ec.addEventListener('wheel',e=>{e.preventDefault();const z=editorZoom()*(e.deltaY<0?1.1:.909);document.getElementById('edZoom').value=Math.max(.2,Math.min(3,z)).toFixed(2);editorRender();},{passive:false});
 window.addEventListener('keydown',e=>{if(!editorOpen)return;if(e.key==='Delete'&&editorSelected){editorLevel.objects=editorLevel.objects.filter(o=>o!==editorSelected);editorSelected=null;updateSelectedFields();updateObjectList();editorRender();}if(e.key==='Escape'&&editorOpen){closeEditor();}});
 document.querySelectorAll('.edTool').forEach(b=>b.onclick=()=>{editorTool=b.dataset.tool;document.querySelectorAll('.edTool').forEach(x=>x.classList.remove('active'));b.classList.add('active');editorRender();});
@@ -3368,22 +3344,20 @@ document.getElementById('edNew').onclick=()=>{if(confirm('Create a new level? Un
 document.getElementById('edSave').onclick=()=>{readEditorFields();localStorage.setItem('kt_editor_draft',JSON.stringify(editorLevel));showEditorNotice('EDITOR DRAFT SAVED');};
 document.getElementById('edPublish').onclick=()=>{readEditorFields();const arr=JSON.parse(localStorage.getItem('kt_published_stage3')||'[]');const idx=arr.findIndex(x=>x.name===editorLevel.name);if(idx>=0)arr[idx]=cloneData(editorLevel);else arr.push(cloneData(editorLevel));localStorage.setItem('kt_published_stage3',JSON.stringify(arr));showEditorNotice('STAGE 3 PUBLISHED — F5 KEEPS IT');};
 document.getElementById('edExport').onclick=()=>{readEditorFields();const blob=new Blob([JSON.stringify(editorLevel,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(editorLevel.name||'stage3').replace(/[^a-z0-9_-]+/gi,'_')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);showEditorNotice('JSON EXPORTED');};
-document.getElementById('edPlay').onclick=()=>{readEditorFields();localStorage.setItem('kt_test_level',JSON.stringify(editorLevel));editorTestSnapshot=cloneData(editorLevel);editorOpen=false;editor.classList.remove('show');launchCustomStage3(editorTestSnapshot,true);};
+document.getElementById('edPlay').onclick=()=>{readEditorFields();localStorage.setItem('kt_test_level',JSON.stringify(editorLevel));closeEditor();launchCustomStage3(editorLevel,true);};
 document.getElementById('edExit').onclick=()=>closeEditor();
 function showEditorNotice(t){const n=document.getElementById('levelPublishedNotice');n.textContent=t;n.classList.add('show');setTimeout(()=>n.classList.remove('show'),1800);}
 
 // -------- CUSTOM STAGE 3 RUNTIME --------
 let customLevel=null, customLevelRuntime=false, customTriggerState=new Set(), customMusic=null;
 function launchCustomStage3(level,test=false){
-  customEditorTest=!!test; customLevel=cloneData(level);customLevelRuntime=true;currentStage=3;inStages=false;inMenu=false;autoPilot=false;playingReal=true;paused=false;
-  document.getElementById('ui').style.display='';document.getElementById('stageSelect').classList.remove('show');document.getElementById('bossStageSelect').classList.remove('show');document.getElementById('mainMenu').classList.add('hidden');document.getElementById('settingsScreen').classList.remove('show');document.getElementById('pauseScreen').classList.remove('show');makeLevelsBtn.classList.remove('show');creatorModal.classList.remove('show');
+  customLevel=cloneData(level);customLevelRuntime=true;currentStage=3;inStages=false;inMenu=false;autoPilot=false;playingReal=true;paused=false;document.getElementById('ui').style.display='';document.getElementById('stageSelect').classList.remove('show');document.getElementById('bossStageSelect').classList.remove('show');
   WORLD.w=Math.max(1000,customLevel.map.w);WORLD.h=Math.max(700,customLevel.map.h);player.x=customLevel.spawn.x;player.y=customLevel.spawn.y;camera.x=0;camera.y=0;
   customTriggerState=new Set();customMusic=null;restartGame();player.x=customLevel.spawn.x;player.y=customLevel.spawn.y;customLevelRuntime=true;customLevel=cloneData(level);if(customLevel.music){customMusic=new Audio(customLevel.music);customMusic.loop=true;customMusic.volume=musicVolume;tryPlayMusic(customMusic,()=>customLevelRuntime&&playingReal&&!paused);}
   // Spawn only objects with group 0. Triggered groups stay dormant.
   customLevel.objects.filter(o=>o.type!=='trigger'&&o.type!=='spawn'&&(o.group||0)===0).forEach(o=>spawnCustomEntity(o));
-  if(!test) playWakeUpEffect();
+  playWakeUpEffect();
 }
-function returnFromCustomTestToEditor(){if(!customEditorTest)return false;customEditorTest=false;customLevelRuntime=false;playingReal=false;paused=false;if(customMusic){customMusic.pause();customMusic.currentTime=0;customMusic=null;}musicGame.pause();musicGame2.pause();divineMusic.pause();document.getElementById('pauseScreen').classList.remove('show');document.getElementById('deathScreen').style.display='none';document.getElementById('stageCompleteScreen').classList.remove('show');document.getElementById('ui').style.display='none';customLevel=null;editorLevel=cloneData(editorTestSnapshot||JSON.parse(localStorage.getItem('kt_test_level')||'null')||blankLevel());editorOpen=true;editor.classList.add('show');editorResize();loadEditorFields();editorRender();return true;}
 function spawnCustomEntity(o){
   if(o.type==='tree'||o.type==='wall')return; // map geometry is rendered/collided directly
   if(o.type==='green'||o.type==='glob'||o.type==='knight'){const hp=(o.type==='green'?60:o.type==='glob'?40:90)*DIFF.enemyHpMult;enemies.push({type:o.type,x:o.x,y:o.y,radius:Math.max(o.w,o.h)/2,hp,maxHp:hp,speed:o.type==='green'?118:o.type==='glob'?70:205,state:'chase',stateTimer:0,dmg:o.type==='green'?18:o.type==='knight'?24:0,hitCooldown:0,fireTimer:.8,swordTimer:.8,group:o.group||0});}}
@@ -3420,7 +3394,7 @@ function injectPublishedStageCards(){
 }
 function drawCustomThumb(c,lv){const x=c.getContext('2d');x.fillStyle='#111';x.fillRect(0,0,c.width,c.height);x.strokeStyle='rgba(255,255,255,.15)';for(let i=0;i<c.width;i+=25){x.beginPath();x.moveTo(i,0);x.lineTo(i,c.height);x.stroke();}for(let i=0;i<c.height;i+=25){x.beginPath();x.moveTo(0,i);x.lineTo(c.width,i);x.stroke();}const sx=c.width/lv.map.w,sy=c.height/lv.map.h;for(const o of lv.objects){if(o.type==='wall'||o.type==='tree'){x.fillStyle=o.type==='wall'?'#777':'#267a32';x.fillRect(o.x*sx-o.w*sx/2,o.y*sy-o.h*sy/2,o.w*sx,o.h*sy);}}x.fillStyle='#55ffff';x.beginPath();x.arc(lv.spawn.x*sx,lv.spawn.y*sy,5,0,Math.PI*2);x.fill();}
 const _openStageSelect=openStageSelect;
-openStageSelect=function(){_openStageSelect();injectPublishedStageCards();updateCreatorUI();};
+openStageSelect=function(){_openStageSelect();injectPublishedStageCards();};
 
 // ---------- GAME LOOP ----------
 function loop(now){
